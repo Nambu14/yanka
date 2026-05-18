@@ -1,9 +1,15 @@
 from pathlib import Path
 
-from whyline.paths import DEFAULT_DATA_DIR, ensure_data_layout, resolve_data_paths
+from whyline.paths import (
+    DATA_DIR_ENV_VAR,
+    DEFAULT_DATA_DIR,
+    ensure_data_layout,
+    resolve_data_paths,
+)
 
 
-def test_default_data_dir() -> None:
+def test_default_data_dir(monkeypatch) -> None:
+    monkeypatch.delenv(DATA_DIR_ENV_VAR, raising=False)
     paths = resolve_data_paths()
     expected_root = DEFAULT_DATA_DIR.expanduser().resolve()
     assert paths.data_dir == expected_root
@@ -12,6 +18,20 @@ def test_default_data_dir() -> None:
     assert paths.graph_dir == expected_root / "graph"
     assert paths.vectors_dir == expected_root / "vectors"
     assert paths.config_path == expected_root / "config.yaml"
+
+
+def test_env_override(tmp_path: Path, monkeypatch) -> None:
+    target = tmp_path / "from-env"
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(target))
+    paths = resolve_data_paths()
+    assert paths.data_dir == target.resolve()
+
+
+def test_explicit_overrides_env(tmp_path: Path, monkeypatch) -> None:
+    explicit = tmp_path / "explicit"
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path / "from-env"))
+    paths = resolve_data_paths(explicit)
+    assert paths.data_dir == explicit.resolve()
 
 
 def test_custom_data_dir(tmp_path: Path) -> None:

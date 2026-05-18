@@ -1,7 +1,9 @@
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_DATA_DIR = Path("~/.whyline")
+DATA_DIR_ENV_VAR = "WHYLINE_DATA_DIR"
 
 
 @dataclass(frozen=True)
@@ -18,7 +20,11 @@ _LAYOUT_DIRS = ("records_dir", "graph_dir", "vectors_dir")
 
 
 def resolve_data_paths(data_dir: Path | str | None = None) -> DataPaths:
-    root = _expand(data_dir if data_dir is not None else DEFAULT_DATA_DIR)
+    """Resolve storage paths.
+
+    Precedence: explicit arg > WHYLINE_DATA_DIR > ~/.whyline.
+    """
+    root = _expand(_resolve_data_dir_root(data_dir))
     return _paths_for_root(root)
 
 
@@ -28,6 +34,15 @@ def ensure_data_layout(paths: DataPaths | None = None) -> DataPaths:
     for name in _LAYOUT_DIRS:
         getattr(resolved, name).mkdir(parents=True, exist_ok=True)
     return resolved
+
+
+def _resolve_data_dir_root(explicit: Path | str | None) -> Path | str:
+    if explicit is not None:
+        return explicit
+    env_value = os.environ.get(DATA_DIR_ENV_VAR)
+    if env_value:
+        return env_value
+    return DEFAULT_DATA_DIR
 
 
 def _paths_for_root(root: Path) -> DataPaths:
