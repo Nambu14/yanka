@@ -22,10 +22,22 @@ _LAYOUT_DIRS = ("records_dir", "graph_dir", "vectors_dir")
 def resolve_data_paths(data_dir: Path | str | None = None) -> DataPaths:
     """Resolve storage paths.
 
-    Precedence: explicit arg > WHYLINE_DATA_DIR > ~/.whyline.
+    Precedence: explicit arg > config.data_dir > WHYLINE_DATA_DIR > ~/.whyline.
     """
-    root = _expand(_resolve_data_dir_root(data_dir))
-    return _paths_for_root(root)
+    if data_dir is not None:
+        return _paths_for_root(_expand(data_dir))
+
+    bootstrap = _expand(_bootstrap_data_dir_root())
+    config_path = bootstrap / "config.yaml"
+    if config_path.is_file():
+        from whyline.config import load_config
+
+        config = load_config(_paths_for_root(bootstrap))
+        config_root = _expand(config.data_dir)
+        if config_root != bootstrap:
+            return resolve_data_paths(config_root)
+
+    return _paths_for_root(bootstrap)
 
 
 def ensure_data_layout(paths: DataPaths | None = None) -> DataPaths:
@@ -36,9 +48,8 @@ def ensure_data_layout(paths: DataPaths | None = None) -> DataPaths:
     return resolved
 
 
-def _resolve_data_dir_root(explicit: Path | str | None) -> Path | str:
-    if explicit is not None:
-        return explicit
+def _bootstrap_data_dir_root() -> Path | str:
+    """Env > ~/.whyline — used only to locate config before full resolution."""
     env_value = os.environ.get(DATA_DIR_ENV_VAR)
     if env_value:
         return env_value
