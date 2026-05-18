@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from whyline.paths import DEFAULT_DATA_DIR, resolve_data_paths
+from whyline.paths import DEFAULT_DATA_DIR, ensure_data_layout, resolve_data_paths
 
 
 def test_default_data_dir() -> None:
@@ -19,6 +19,27 @@ def test_custom_data_dir(tmp_path: Path) -> None:
     assert paths.data_dir == tmp_path.resolve()
     assert paths.records_dir == tmp_path / "records"
     assert paths.config_path == tmp_path / "config.yaml"
+
+
+def test_ensure_data_layout_creates_dirs(tmp_path: Path) -> None:
+    paths = resolve_data_paths(tmp_path)
+    assert not paths.records_dir.exists()
+
+    result = ensure_data_layout(paths)
+
+    assert result is paths
+    assert paths.records_dir.is_dir()
+    assert paths.graph_dir.is_dir()
+    assert paths.vectors_dir.is_dir()
+    assert not paths.config_path.exists()
+    assert not paths.changelog_path.exists()
+
+
+def test_ensure_data_layout_is_idempotent(tmp_path: Path) -> None:
+    paths = resolve_data_paths(tmp_path)
+    ensure_data_layout(paths)
+    ensure_data_layout(paths)
+    assert paths.records_dir.is_dir()
 
 
 def test_tilde_expansion(tmp_path: Path, monkeypatch) -> None:
