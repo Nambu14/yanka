@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phase 0 in progress — **0.1–0.5, 0.3b ✓** (committed), next **0.6** (API keys).
+**Status:** Phase 0 in progress — **0.1–0.6, 0.3b ✓** (committed), next **0.7** (first-run wizard).
 
 ---
 
@@ -99,7 +99,7 @@ src/whyline/
 | 0.3b | Data dir override | `WHYLINE_DATA_DIR` env; `--data-dir` CLI flag | Tests/dev never touch real `~/.whyline` | ✓ |
 | 0.4 | Bootstrap data dir | `ensure_data_layout()` | Tree matches spec §2 | ✓ |
 | 0.5 | Config load/save | `load_config()`, `save_config()` | YAML round-trip | ✓ |
-| 0.6 | API key storage | keyring + env fallback | Mocked tests | |
+| 0.6 | API key storage | keyring + env fallback | Mocked tests | ✓ |
 | 0.7 | First-run wizard | provider + key only | Fresh `~/.whyline` works | |
 
 **Note:** User-facing `data_dir` (first-run choice) lands in **0.5** (config) + **0.7** (wizard). Resolution order will become: CLI `--data-dir` → `config.data_dir` → `WHYLINE_DATA_DIR` → `~/.whyline`.
