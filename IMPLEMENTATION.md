@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phase 0 in progress — **0.1–0.5, 0.3b ✓**, next **0.6** (API keys).
+**Status:** Phase 0 in progress — **0.1–0.5, 0.3b ✓** (committed), next **0.6** (API keys).
 
 ---
 
