@@ -4,6 +4,7 @@ import click
 
 from whyline import __version__
 from whyline.paths import DataPaths, resolve_data_paths
+from whyline.setup import config_exists, run_first_run
 
 CONTEXT_KEY = "paths"
 
@@ -23,16 +24,24 @@ CONTEXT_KEY = "paths"
 def main(ctx: click.Context, data_dir: Path | None) -> None:
     """Capture engineering decisions and retrieve them later."""
     ctx.ensure_object(dict)
-    ctx.obj[CONTEXT_KEY] = resolve_data_paths(data_dir)
+    paths = resolve_data_paths(data_dir)
+    ran_setup = False
 
-    if ctx.invoked_subcommand is None:
+    if not config_exists(paths):
+        paths, _config = run_first_run(bootstrap=paths)
+        paths = resolve_data_paths(data_dir or paths.data_dir)
+        ran_setup = True
+
+    ctx.obj[CONTEXT_KEY] = paths
+
+    if ctx.invoked_subcommand is None and not ran_setup:
         click.echo(ctx.get_help())
+
+
+if __name__ == "__main__":
+    main()
 
 
 def get_data_paths(ctx: click.Context) -> DataPaths:
     """Resolved paths for the current CLI invocation."""
     return ctx.ensure_object(dict)[CONTEXT_KEY]
-
-
-if __name__ == "__main__":
-    main()

@@ -7,7 +7,7 @@ name = "whyline"
 version = "0.1.0"
 description = "Capture engineering decisions from conversation and retrieve them later."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Lucas" }]
 dependencies = ["click>=8.0", "keyring>=25.0", "pyyaml>=6.0"]
@@ -17,6 +17,7 @@ whyline = "whyline.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.8"]
+spike = ["ladybug", "lancedb", "litellm", "numpy>=1.26"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/whyline"]
@@ -24,9 +25,13 @@ packages = ["src/whyline"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+norecursedirs = ["spikes"]
+markers = [
+    "spike: dependency spike tests (require pip install -e '.[spike]')",
+]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]

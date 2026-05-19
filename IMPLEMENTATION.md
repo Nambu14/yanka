@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phase 0 in progress — **0.1–0.6, 0.3b ✓** (committed), next **0.7** (first-run wizard).
+**Status:** Phase S complete — **spikes ✓**. Next **Phase 2** (embeddings + LanceDB wrappers).
 
 ---
 
@@ -100,7 +100,7 @@ src/whyline/
 | 0.4 | Bootstrap data dir | `ensure_data_layout()` | Tree matches spec §2 | ✓ |
 | 0.5 | Config load/save | `load_config()`, `save_config()` | YAML round-trip | ✓ |
 | 0.6 | API key storage | keyring + env fallback | Mocked tests | ✓ |
-| 0.7 | First-run wizard | provider + key only | Fresh `~/.whyline` works | |
+| 0.7 | First-run wizard | provider + key + data dir | Fresh `~/.whyline` works | ✓ |
 
 **Note:** User-facing `data_dir` (first-run choice) lands in **0.5** (config) + **0.7** (wizard). Resolution order will become: CLI `--data-dir` → `config.data_dir` → `WHYLINE_DATA_DIR` → `~/.whyline`.
 
@@ -118,6 +118,8 @@ Run once before Phase 2–3 implementation. Small scripts or tests under `tests/
 
 **Gate:** All three spikes pass before starting Phase 2.4+ / 3.2+.
 
+**Done:** `tests/spikes/` + optional dep group `spike`. Default `pytest` skips `tests/spikes/` via `norecursedirs`; run spikes with `pip install -e ".[spike]"` and `WHYLINE_RUN_SPIKES=1 pytest tests/spikes`.
+
 ---
 
 ## Phase 1 — Record model (filesystem only) → M1
@@ -133,7 +135,7 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 | 1.5 | Serialize to markdown | `record_to_markdown()` | Round-trip |
 | 1.6 | Write record | `write_record()` | File on disk |
 | 1.7 | Read all records | `iter_records()` | Multi-file fixture |
-| 1.8 | Changelog append | `append_changelog()` | JSONL + stable hash |
+| 1.8 | Changelog append | `append_changelog()` | JSONL + stable hash | ✓ |
 
 ---
 
