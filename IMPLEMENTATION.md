@@ -143,14 +143,14 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
-| 2.1 | `embed()` abstraction | `embed(texts) -> vectors` | Interface test |
-| 2.2 | FastEmbed backend | all-MiniLM-L6-v2 | 384-dim output |
-| 2.3 | LanceDB helper | `get_vector_db()` | Idempotent open |
-| 2.4 | Records table | spec §5 schema | Empty query |
-| 2.5 | Claims table | spec §5 schema | Manual insert |
-| 2.6 | Index one record | `index_record()` | Semantic hit |
-| 2.7 | Index claims | `index_claims()` | Claim wording hit |
-| 2.8 | Search helpers | filters: status, project, context | Filter unit tests |
+| 2.1 | `embed()` abstraction | `embed(texts) -> vectors` | Interface test | ✓ |
+| 2.2 | FastEmbed backend | all-MiniLM-L6-v2 | 384-dim output | ✓ |
+| 2.3 | LanceDB helper | `get_vector_db()` | Idempotent open | ✓ |
+| 2.4 | Records table | spec §5 schema | Empty query | ✓ |
+| 2.5 | Claims table | spec §5 schema | Manual insert | ✓ |
+| 2.6 | Index one record | `index_record()` | Semantic hit | ✓ |
+| 2.7 | Index claims | `index_claims()` | Claim wording hit | ✓ |
+| 2.8 | Search helpers | filters: status, project, context | Filter unit tests | ✓ |
 
 ---
 
@@ -160,12 +160,12 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
-| 3.1 | Spike → production helper | fold S.1 into `get_graph_db()` | Idempotent open at `graph/` |
-| 3.2 | Schema init | Context, Decision, Claim, Person + edges | Insert each type |
-| 3.3 | Context path upsert | `contains` hierarchy | Idempotent re-run |
-| 3.4 | Decision + edges | `about`, `involves`, `has_claim` | Query returns links |
-| 3.5 | Supersede edges | claim → claim, status updates | Chain query |
-| 3.6 | Graph conflict candidates | subtree active claims | Fixture graph |
+| 3.1 | Spike → production helper | fold S.1 into `get_graph_db()` | Idempotent open at `graph/` | ✓ |
+| 3.2 | Schema init | Context, Decision, Claim, Person + edges | Insert each type | ✓ |
+| 3.3 | Context path upsert | `contains` hierarchy | Idempotent re-run | ✓ |
+| 3.4 | Decision + edges | `about`, `involves`, `has_claim` | Query returns links | ✓ |
+| 3.5 | Supersede edges | claim → claim, status updates | Chain query | ✓ |
+| 3.6 | Graph conflict candidates | subtree active claims | Fixture graph | ✓ |
 
 *(Former 3.2–3.7 renumbered after folding spike into 3.1.)*
 

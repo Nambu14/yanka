@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.0,<2"]
 build-backend = "hatchling.build"
 
 [project]
@@ -10,14 +10,36 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Lucas" }]
-dependencies = ["click>=8.0", "keyring>=25.0", "pyyaml>=6.0"]
+dependencies = [
+    "click>=8.0,<9",
+    "keyring>=25.0,<26",
+    "pyyaml>=6.0,<7",
+]
 
 [project.scripts]
 whyline = "whyline.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.8"]
-spike = ["ladybug", "lancedb", "litellm", "numpy>=1.26"]
+dev = [
+    "pytest>=8.0,<9",
+    "ruff>=0.8,<1",
+]
+embedding = [
+    "fastembed>=0.5,<1",
+]
+vectors = [
+    "lancedb>=0.20,<1",
+    "numpy>=1.26,<3",
+]
+graph = [
+    "ladybug>=0.16,<1",
+]
+spike = [
+    "ladybug>=0.16,<1",
+    "lancedb>=0.20,<1",
+    "litellm>=1.0,<2",
+    "numpy>=1.26,<3",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/whyline"]
@@ -28,6 +50,7 @@ pythonpath = ["src"]
 norecursedirs = ["spikes"]
 markers = [
     "spike: dependency spike tests (require pip install -e '.[spike]')",
+    "embedding: requires pip install -e '.[embedding]' (downloads ONNX model on first run)",
 ]
 
 [tool.ruff]
