@@ -31,6 +31,19 @@ def _redis_aware_embed(
     return vectors
 
 
+def _marker_embed(texts: list[str], _config: EmbeddingConfig) -> list[list[float]]:
+    vectors: list[list[float]] = []
+    for text in texts:
+        vector = [0.0] * EMBEDDING_DIM
+        lower = text.lower()
+        if "zzz_unique_marker" in lower:
+            vector[2] = 1.0
+        elif "drop redis" in lower:
+            vector[0] = 1.0
+        vectors.append(vector)
+    return vectors
+
+
 @pytest.fixture(autouse=True)
 def _setup_embed_backend() -> None:
     clear_vector_db_cache()
@@ -75,3 +88,29 @@ def test_index_record_upsert_replaces_row(tmp_path: Path) -> None:
     assert table.count_rows() == 1
     row = table.search(np.zeros(EMBEDDING_DIM, dtype=np.float32)).limit(1).to_list()[0]
     assert row["summary"] == "Updated decision summary"
+
+
+def test_index_record_reindex_uses_current_record_fields(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    record_file = read_record(FIXTURE)
+    record = record_file.record
+    record.source_path = paths.records_dir / "decision.md"
+    register_embedding_backend("marker", _marker_embed)
+    config = EmbeddingConfig(provider="marker", model="fake")
+
+    index_record(record, paths, config=config)
+    record.decision = "ZZZ_UNIQUE_MARKER"
+    index_record(record, paths, config=config)
+
+    query = np.array(
+        [0.0, 0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 3),
+        dtype=np.float32,
+    )
+    row = (
+        get_records_table(paths)
+        .search(query)
+        .limit(1)
+        .to_list()[0]
+    )
+    assert row["summary"] == "ZZZ_UNIQUE_MARKER"
+    assert row["vector"][2] == 1.0

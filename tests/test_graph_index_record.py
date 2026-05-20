@@ -87,3 +87,19 @@ def test_index_record_graph_reindex_updates_decision(tmp_path: Path) -> None:
     assert graph.connection.execute(
         "MATCH (d:Decision) RETURN count(*)"
     ).get_all() == [[1]]
+
+
+def test_index_record_graph_reindex_replaces_about_context(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    graph = get_graph_db(paths)
+    init_graph_schema(graph)
+    record = _record_with_source(paths, "decision.md")
+
+    index_record_graph(record, graph, paths)
+    record.context_path = ["main-platform", "billing"]
+    index_record_graph(record, graph, paths)
+
+    assert graph.connection.execute(
+        "MATCH (d:Decision {file_reference: 'records/decision.md'})"
+        "-[:about]->(c:Context) RETURN c.canonical_name ORDER BY c.canonical_name"
+    ).get_all() == [["main-platform/billing"]]

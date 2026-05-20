@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phase S complete — **spikes ✓**. Next **Phase 2** (embeddings + LanceDB wrappers).
+**Status:** Phases 0–3 complete. Next **Phase 4** (rebuild → M2).
 
 ---
 
@@ -128,13 +128,13 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
-| 1.1 | Frontmatter parser | `parse_frontmatter()` | Valid / invalid fixtures |
-| 1.2 | Completion check | `is_complete_record()` | Spec §7 key set |
-| 1.3 | Record datatypes | `Record`, `Claim` | Parse spec §3 example |
-| 1.4 | Filename / slug | `YYYY-MM-DD-<slug>.md` | Collision policy tested |
-| 1.5 | Serialize to markdown | `record_to_markdown()` | Round-trip |
-| 1.6 | Write record | `write_record()` | File on disk |
-| 1.7 | Read all records | `iter_records()` | Multi-file fixture |
+| 1.1 | Frontmatter parser | `parse_frontmatter()` | Valid / invalid fixtures | ✓ |
+| 1.2 | Completion check | `is_complete_record()` | Spec §7 key set | ✓ |
+| 1.3 | Record datatypes | `Record`, `Claim` | Parse spec §3 example | ✓ |
+| 1.4 | Filename / slug | `YYYY-MM-DD-<slug>.md` | Collision policy tested | ✓ |
+| 1.5 | Serialize to markdown | `record_to_markdown()` | Round-trip | ✓ |
+| 1.6 | Write record | `write_record()` | File on disk | ✓ |
+| 1.7 | Read all records | `iter_records()` | Multi-file fixture | ✓ |
 | 1.8 | Changelog append | `append_changelog()` | JSONL + stable hash | ✓ |
 
 ---

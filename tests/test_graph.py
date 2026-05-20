@@ -83,5 +83,6 @@ def test_graph_store_error_when_ladybug_missing(
 
     missing_root = Path("/tmp/whyline-test-graph-missing")
     paths = ensure_data_layout(resolve_data_paths(missing_root))
-    with pytest.raises(GraphStoreError, match=r"\[graph\]"):
+    with pytest.raises(GraphStoreError, match=r"\[graph\]") as exc:
         get_graph_db(paths)
+    assert "ladybug is not installed" in str(exc.value)

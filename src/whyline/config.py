@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import yaml
 
@@ -10,9 +10,6 @@ from whyline.paths import DEFAULT_DATA_DIR, DataPaths, _expand
 
 DEFAULT_LLM_MODEL = "claude-sonnet-4-20250514"
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
-T = TypeVar("T")
-
 
 @dataclass
 class LlmConfig:
@@ -92,7 +89,7 @@ def _config_to_dict(config: WhylineConfig) -> dict[str, Any]:
     return data
 
 
-def _merge_dataclass(default: T, overrides: Any) -> T:
+def _merge_dataclass[T](default: T, overrides: Any) -> T:
     if not overrides:
         return default
     if not isinstance(overrides, dict):

@@ -41,6 +41,9 @@ def index_record_graph(
         f"d.summary = '{_escape(record.decision)}', "
         f"d.tags = {tags_literal}"
     )
+    conn.execute(
+        f"MATCH (d:Decision {{file_reference: '{ref}'}})-[r:about]->() DELETE r"
+    )
 
     conn.execute(
         f"MATCH (d:Decision {{file_reference: '{ref}'}}), "

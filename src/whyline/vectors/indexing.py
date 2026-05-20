@@ -16,8 +16,6 @@ from whyline.vectors.records import get_records_table
 
 def record_embedding_text(record: Record) -> str:
     """Text embedded for full-record vector search (spec §5)."""
-    if record.raw_markdown:
-        return record.raw_markdown
     return record_to_markdown(record)
 
 

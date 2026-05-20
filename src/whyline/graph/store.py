@@ -39,7 +39,7 @@ def get_graph_db(paths: DataPaths | None = None) -> GraphDb:
         import ladybug
     except ImportError as exc:
         msg = (
-            "ladybug is not installed. "
+            "[graph] ladybug is not installed. "
             'Install with: pip install -e ".[graph]" or pip install -e ".[spike]"'
         )
         raise GraphStoreError(msg) from exc
