@@ -14,6 +14,7 @@ dependencies = [
     "click>=8.0,<9",
     "keyring>=25.0,<26",
     "pyyaml>=6.0,<7",
+    "rich>=13.0,<14",
 ]
 
 [project.scripts]
@@ -34,6 +35,9 @@ vectors = [
 graph = [
     "ladybug>=0.16,<1",
 ]
+llm = [
+    "litellm>=1.0,<2",
+]
 spike = [
     "ladybug>=0.16,<1",
     "lancedb>=0.20,<1",
@@ -51,6 +55,7 @@ norecursedirs = ["spikes"]
 markers = [
     "spike: dependency spike tests (require pip install -e '.[spike]')",
     "embedding: requires pip install -e '.[embedding]' (downloads ONNX model on first run)",
+    "llm_live: optional live LLM call (pip install -e '.[llm]' and provider or Ollama)",
 ]
 
 [tool.ruff]

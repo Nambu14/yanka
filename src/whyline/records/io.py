@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from whyline.paths import DataPaths
-from whyline.records.changelog import append_changelog, create_entry
+from whyline.records.changelog import append_changelog, entry_for_written_record
 from whyline.records.markdown import record_to_markdown
 from whyline.records.models import Record, RecordFile, parse_record
 from whyline.records.slug import unique_record_path
@@ -52,7 +52,7 @@ def write_record(
 
     content = record_to_markdown(record)
     _atomic_write_text(target, content)
-    append_changelog(paths, create_entry(target.name, content))
+    append_changelog(paths, entry_for_written_record(target.name, content, record))
     return target
 
 

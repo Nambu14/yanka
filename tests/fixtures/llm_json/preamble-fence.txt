@@ -1,0 +1,5 @@
+Here is the analysis:
+
+```json
+{"query_type": "exploratory", "filters": {}, "semantic_query": null, "graph_hint": "List recent decisions"}
+```

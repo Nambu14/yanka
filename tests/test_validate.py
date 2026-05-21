@@ -2,6 +2,7 @@ from pathlib import Path
 
 from whyline.records.validate import (
     REQUIRED_FRONTMATTER_KEYS,
+    extract_complete_record_text,
     is_complete_record,
     validate_frontmatter_keys,
 )
@@ -48,9 +49,23 @@ def test_no_fence_not_complete() -> None:
     assert is_complete_record(_read("no-fence.md")) is False
 
 
-def test_record_complete_string_not_complete() -> None:
-    assert is_complete_record(_read("record-complete-string.md")) is False
+def test_record_complete_string_yes_is_complete() -> None:
+    assert is_complete_record(_read("record-complete-string.md")) is True
 
 
 def test_bare_fences_not_complete() -> None:
     assert is_complete_record("---\n---\n") is False
+
+
+def test_extract_complete_record_with_preamble_and_trailing_prose() -> None:
+    core = _read("valid-decision.md")
+    wrapped = (
+        "Great, here is the structured record:\n\n"
+        f"{core}\n\n"
+        "Let me know if you need anything else!\n"
+    )
+    extracted = extract_complete_record_text(wrapped)
+    assert extracted is not None
+    assert is_complete_record(wrapped) is True
+    assert extracted.startswith("---")
+    assert "Drop Redis for session storage" in extracted

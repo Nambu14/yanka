@@ -22,6 +22,7 @@ from whyline.records.models import (
     RecordBody,
     RecordStatus,
     RecordType,
+    claims_from_json,
     parse_record,
     record_from_frontmatter,
 )
@@ -46,6 +47,7 @@ __all__ = [
     "Claim",
     "ClaimStatus",
     "ClaimSupersedes",
+    "claims_from_json",
     "Record",
     "RecordBody",
     "RecordFile",

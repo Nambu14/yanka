@@ -156,7 +156,8 @@ def _split_sections(body: str) -> dict[str, str]:
     return sections
 
 
-def _parse_claims(raw: Any) -> list[Claim]:
+def claims_from_json(raw: Any) -> list[Claim]:
+    """Parse a JSON claim array (LLM output or YAML frontmatter) into Claim objects."""
     if raw is None:
         return []
     if not isinstance(raw, list):
@@ -187,6 +188,10 @@ def _parse_claims(raw: Any) -> list[Claim]:
             )
         )
     return claims
+
+
+def _parse_claims(raw: Any) -> list[Claim]:
+    return claims_from_json(raw)
 
 
 def _parse_date(value: Any) -> date:

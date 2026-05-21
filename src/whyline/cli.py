@@ -4,6 +4,7 @@ import click
 
 from whyline import __version__
 from whyline.paths import DataPaths, resolve_data_paths
+from whyline.rebuild import rebuild_indexes
 from whyline.setup import config_exists, run_first_run
 
 CONTEXT_KEY = "paths"
@@ -36,6 +37,15 @@ def main(ctx: click.Context, data_dir: Path | None) -> None:
 
     if ctx.invoked_subcommand is None and not ran_setup:
         click.echo(ctx.get_help())
+
+
+@main.command("rebuild")
+@click.pass_context
+def rebuild(ctx: click.Context) -> None:
+    """Rebuild graph and vector indexes from markdown records on disk."""
+    paths = get_data_paths(ctx)
+    count = rebuild_indexes(paths)
+    click.echo(f"Rebuilt indexes from {count} record(s).")
 
 
 if __name__ == "__main__":

@@ -14,9 +14,20 @@ class ContextLevel:
     depth: int
 
 
+_SUFFIXES = ("service", "system", "module")
+
+
 def normalize_context_segment(segment: str) -> str:
-    """Minimal normalize for normalized_name (full §9 resolution is later)."""
-    return segment.strip().lower()
+    """Normalize a context segment for entity resolution (spec §9)."""
+    from whyline.records.slug import slugify_text
+
+    slug = slugify_text(segment)
+    for suffix in _SUFFIXES:
+        token = f"-{suffix}"
+        if slug.endswith(token) and len(slug) > len(token):
+            slug = slug[: -len(token)]
+            break
+    return slug or "context"
 
 
 def build_context_levels(segments: list[str]) -> list[ContextLevel]:

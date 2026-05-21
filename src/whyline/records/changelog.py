@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 from whyline.paths import DataPaths
+from whyline.records.models import Record
 
 ChangelogAction = Literal["create", "supersede"]
 
@@ -79,3 +80,40 @@ def create_entry(file: str, content: str, *, ts: str | None = None) -> Changelog
         file=file,
         hash=content_hash(content),
     )
+
+
+def entry_for_written_record(
+    file: str,
+    content: str,
+    record: Record,
+    *,
+    ts: str | None = None,
+) -> ChangelogEntry:
+    """Build a changelog entry for a record write (create or supersede)."""
+    superseded_claims = _supersedes_claims_for_record(record)
+    if record.supersedes is not None or superseded_claims is not None:
+        return ChangelogEntry(
+            ts=ts or utc_timestamp(),
+            action="supersede",
+            file=file,
+            hash=content_hash(content),
+            supersedes_file=record.supersedes,
+            supersedes_claims=superseded_claims,
+        )
+    return create_entry(file, content, ts=ts)
+
+
+def _supersedes_claims_for_record(record: Record) -> list[dict[str, str]] | None:
+    pairs: list[dict[str, str]] = []
+    for claim in record.claims:
+        if claim.supersedes is None:
+            continue
+        pairs.append(
+            {
+                "new": claim.id,
+                "old": f"{claim.supersedes.file}:{claim.supersedes.claim}",
+            }
+        )
+    if not pairs:
+        return None
+    return pairs

@@ -20,8 +20,9 @@ def test_default_config_values() -> None:
     assert config.llm.endpoint is None
     assert config.embedding.provider == "local"
     assert config.embedding.model == DEFAULT_EMBEDDING_MODEL
-    assert config.extraction.max_rounds == 6
+    assert config.extraction.max_rounds == 2
     assert config.extraction.conflict_search_limit == 10
+    assert config.extraction.context_search_limit == 5
 
 
 def test_load_config_missing_file_uses_defaults(tmp_path: Path) -> None:

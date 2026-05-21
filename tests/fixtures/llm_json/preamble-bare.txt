@@ -1,0 +1,1 @@
+Sure! {"conflicts": [{"new_claim_id": "c1", "existing_claim_id": "a.md:c2", "reason": "overlap"}]}

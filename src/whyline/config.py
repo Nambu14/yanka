@@ -26,8 +26,9 @@ class EmbeddingConfig:
 
 @dataclass
 class ExtractionConfig:
-    max_rounds: int = 6
+    max_rounds: int = 2
     conflict_search_limit: int = 10
+    context_search_limit: int = 5
 
 
 @dataclass

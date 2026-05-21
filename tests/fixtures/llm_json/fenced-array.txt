@@ -1,0 +1,5 @@
+```json
+[
+  {"id": "c1", "content": "Sessions use PostgreSQL", "status": "active"}
+]
+```

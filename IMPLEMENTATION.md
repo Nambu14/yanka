@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phases 0–3 complete. Next **Phase 4** (rebuild → M2).
+**Status:** Phases 0–4 complete. Next **Phase 5** (LLM layer).
 
 ---
 
@@ -175,9 +175,9 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
-| 4.1 | Reset indexes | wipe `graph/`, `vectors/` only | Dirs recreated |
-| 4.2 | Rebuild from files | parse → graph → vectors | Search works post-rebuild |
-| 4.3 | CLI `/rebuild` | user-facing command | Corrupt vectors → recover |
+| 4.1 | Reset indexes | wipe `graph/`, `vectors/` only | Dirs recreated | ✓ |
+| 4.2 | Rebuild from files | parse → graph → vectors | Search works post-rebuild | ✓ |
+| 4.3 | CLI `/rebuild` | user-facing command | Corrupt vectors → recover | ✓ |
 
 ---
 
@@ -185,9 +185,9 @@ No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
-| 5.1 | LiteLLM wrapper | `complete(messages, ...)` | Mock + optional live |
-| 5.2 | Prompt registry | 5 prompts from spec §10 | `get_prompt(name)` |
-| 5.3 | JSON helper | parse fenced JSON, retry | Malformed fixtures |
+| 5.1 | LiteLLM wrapper | `send_messages(messages, ...)` | Mock + optional live | ✓ |
+| 5.2 | Prompt registry | 5 prompts from spec §10 | `get_prompt(name)` | ✓ |
+| 5.3 | JSON helper | parse fenced JSON, retry | Malformed fixtures | ✓ |
 
 ---
 
@@ -197,19 +197,19 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 | Step | Task | Spec ref | Verify |
 |------|------|----------|--------|
-| 6.1 | Write pipeline | step 9 | File written if vector fails |
-| 6.2 | Confirmation UI | step 10 | Rich panel smoke |
-| 6.3 | Claim extraction | prompt 2 | Mock JSON → claims |
-| 6.4 | Claim validation | step 4 | pass / retry / amber |
-| 6.5 | Context search | step 1 | Related record in prompt |
-| 6.6 | Extraction loop | step 2 | Mock: Q&A then record |
-| 6.7 | Entity resolution v1 | step 5 | normalized exact match only |
-| 6.8 | Entity resolution v2 | §9 | aliases + LLM + user ask |
-| 6.9 | Conflict candidates | step 6 | vector + graph merge |
-| 6.10 | Conflict evaluation | step 7, prompt 3 | Mock conflicts |
-| 6.11 | User confirmation | step 8 | yes/no per conflict |
-| 6.12a | Ingest orchestrator (mocked) | steps 1–10 | `pytest` E2E with mocked LLM; no network |
-| 6.12b | Ingest orchestrator (live) | steps 1–10 | One manual `/log` with real API key; checklist only |
+| 6.1 | Write pipeline | step 9 | File written if vector fails | ✓ |
+| 6.2 | Confirmation UI | step 10 | Rich panel smoke | ✓ |
+| 6.3 | Claim extraction | prompt 2 | Mock JSON → claims | ✓ |
+| 6.4 | Claim validation | step 4 | pass / retry / amber | ✓ |
+| 6.5 | Context search | step 1 | Related record in prompt | ✓ |
+| 6.6 | Extraction loop | step 2 | Mock: Q&A then record | ✓ |
+| 6.7 | Entity resolution v1 | step 5 | normalized exact match only | ✓ |
+| 6.8 | Entity resolution v2 | §9 | aliases + LLM + user ask | ✓ |
+| 6.9 | Conflict candidates | step 6 | vector + graph merge | ✓ |
+| 6.10 | Conflict evaluation | step 7, prompt 3 | Mock conflicts | ✓ |
+| 6.11 | User confirmation | step 8 | yes/no per conflict | ✓ |
+| 6.12a | Ingest orchestrator (mocked) | steps 1–10 | `pytest` E2E with mocked LLM; no network | ✓ |
+| 6.12b | Ingest orchestrator (live) | steps 1–10 | [live-ingest-checklist.md](docs/live-ingest-checklist.md) + `scripts/live_ingest.py` | ✓ |
 
 **Gate:** 6.12a must pass before 6.12b.
 
