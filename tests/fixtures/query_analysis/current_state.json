@@ -1,0 +1,10 @@
+{
+  "query_type": "current_state",
+  "filters": {
+    "project": "main-platform",
+    "context_keywords": ["auth", "session"],
+    "status_filter": "active"
+  },
+  "semantic_query": "session storage",
+  "graph_hint": "Find active decisions under auth-related context nodes"
+}

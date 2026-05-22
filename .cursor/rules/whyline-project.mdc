@@ -1,0 +1,10 @@
+---
+description: Whyline — spec and implementation plan pointers
+alwaysApply: true
+---
+
+# Whyline project context
+
+- **Product behavior:** [`whyline-spec.md`](whyline-spec.md) is the source of truth for UX and data model.
+- **Build order:** [`IMPLEMENTATION.md`](IMPLEMENTATION.md) — one step ID at a time (e.g. `2.8`); full plan + completion report per global `incremental-workflow` rule.
+- **Plans should cite** the matching `IMPLEMENTATION.md` row (task, deliverable, verify column) and spec § when relevant.

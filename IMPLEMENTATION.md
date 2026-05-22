@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phases 0–4 complete. Next **Phase 5** (LLM layer).
+**Status:** Phases 0–6 complete. Next **Phase 7** (retrieval pipeline).
 
 ---
 
@@ -219,9 +219,9 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 | Step | Task | Verify |
 |------|------|--------|
-| 7.1 | Query analysis (prompt 4) | Per query-type fixtures |
-| 7.2 | Graph retrieve by type | §8 table |
-| 7.3 | Vector retrieve by type | Filters from analysis |
+| 7.1 | Query analysis (prompt 4) | Per query-type fixtures | ✓ |
+| 7.2 | Graph retrieve by type | §8 table | ✓ |
+| 7.3 | Vector retrieve by type | Filters from analysis | ✓ |
 | 7.4 | Graph-anchored merge | Superseded trap case |
 | 7.5 | Synthesis (prompt 5) | Mock with record bundle |
 | 7.6 | Output formatting | citations, timeline, staleness |

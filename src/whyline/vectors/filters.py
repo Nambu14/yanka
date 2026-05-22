@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,8 @@ class VectorSearchFilters:
     status: str | None = None
     project: str | None = None
     context_path_prefix: str | None = None
+    date_after: date | None = None
+    date_before: date | None = None
 
 
 def build_where_clause(filters: VectorSearchFilters | None) -> str | None:
@@ -27,6 +30,10 @@ def build_where_clause(filters: VectorSearchFilters | None) -> str | None:
     if filters.context_path_prefix is not None:
         prefix = _escape_like_literal(filters.context_path_prefix)
         parts.append(f"context_path LIKE '{prefix}%'")
+    if filters.date_after is not None:
+        parts.append(f"date >= DATE '{filters.date_after.isoformat()}'")
+    if filters.date_before is not None:
+        parts.append(f"date <= DATE '{filters.date_before.isoformat()}'")
 
     if not parts:
         return None

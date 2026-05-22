@@ -1,0 +1,8 @@
+{
+  "query_type": "specific_decision",
+  "filters": {
+    "context_keywords": ["redis"]
+  },
+  "semantic_query": "redis caching",
+  "graph_hint": "Find the decision record about Redis usage"
+}

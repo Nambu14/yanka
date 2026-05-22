@@ -1,0 +1,8 @@
+{
+  "query_type": "relationship",
+  "filters": {
+    "context_keywords": ["kubernetes", "migration"]
+  },
+  "semantic_query": "k8s migration impact",
+  "graph_hint": "Traverse downstream and upstream edges from the K8s migration decision"
+}

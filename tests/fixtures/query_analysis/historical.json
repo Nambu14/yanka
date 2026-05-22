@@ -1,0 +1,9 @@
+{
+  "query_type": "historical",
+  "filters": {
+    "context_keywords": ["auth"],
+    "status_filter": "all"
+  },
+  "semantic_query": "auth approach",
+  "graph_hint": "Walk the full supersession chain for auth-related decisions"
+}

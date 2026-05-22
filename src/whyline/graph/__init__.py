@@ -1,4 +1,5 @@
 from whyline.graph.conflicts import graph_conflict_candidates
+from whyline.graph.retrieve import GraphRetrieveFilters, retrieve_decisions_by_type
 from whyline.graph.context import (
     ContextLevel,
     build_context_levels,
@@ -21,7 +22,9 @@ __all__ = [
     "build_context_levels",
     "clear_graph_db_cache",
     "get_graph_db",
+    "GraphRetrieveFilters",
     "graph_conflict_candidates",
+    "retrieve_decisions_by_type",
     "index_record_graph",
     "init_graph_schema",
     "resolve_superseded_claim_id",

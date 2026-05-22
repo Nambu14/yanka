@@ -1,0 +1,8 @@
+{
+  "query_type": "person",
+  "filters": {
+    "people": ["Carlos"]
+  },
+  "semantic_query": null,
+  "graph_hint": "Follow involves edges from person Carlos"
+}

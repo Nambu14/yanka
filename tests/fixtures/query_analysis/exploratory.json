@@ -1,0 +1,8 @@
+{
+  "query_type": "exploratory",
+  "filters": {
+    "context_keywords": ["security"]
+  },
+  "semantic_query": "security decisions",
+  "graph_hint": "Broad traversal of security-related context"
+}

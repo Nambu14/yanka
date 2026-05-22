@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -49,6 +50,19 @@ def _index_fixture(paths, tmp_name: str = "2026-05-14-redis-session.md") -> None
     config = EmbeddingConfig(provider="test", model="fake")
     index_record(record, paths, config=config)
     index_claims(record, paths, config=config)
+
+
+def test_build_where_clause_includes_date_bounds() -> None:
+    clause = build_where_clause(
+        VectorSearchFilters(
+            status="active",
+            date_after=date(2026, 4, 1),
+            date_before=date(2026, 5, 1),
+        )
+    )
+    assert clause is not None
+    assert "date >= DATE '2026-04-01'" in clause
+    assert "date <= DATE '2026-05-01'" in clause
 
 
 def test_build_where_clause_combines_filters() -> None:
