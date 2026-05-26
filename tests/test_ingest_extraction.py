@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -7,18 +9,43 @@ import pytest
 
 from whyline.ingest.extraction import (
     FINAL_CLARIFYING_ROUND_NUDGE,
-    WRAP_UP_USER_MESSAGE,
     RecordExtractionError,
     build_record_extraction_conversation,
     run_record_extraction_loop,
     run_record_extraction_loop_detailed,
 )
+from whyline.llm.prompts import (
+    PromptName,
+    format_extraction_record_return,
+    get_prompt,
+)
 from whyline.paths import resolve_data_paths
-from whyline.records.validate import is_complete_record
 
 FIXTURES = Path(__file__).parent / "fixtures" / "records"
 CLARIFYING = (FIXTURES / "clarifying-questions.md").read_text(encoding="utf-8")
-COMPLETE = (FIXTURES / "valid-decision.md").read_text(encoding="utf-8")
+
+RECORD_JSON = {
+    "date": "2026-05-26",
+    "type": "problem-statement",
+    "status": "tentative",
+    "record_complete": True,
+    "context_path": ["data-quality", "sampling", "standardization"],
+    "people": ["Rudy"],
+    "tags": ["sampling-rate", "data-quality"],
+    "decision": "Standardize sampling-rate handling across DQ, Fix, and labeling.",
+    "body": {
+        "rationale": "100Hz is hardcoded and customer frequencies need support.",
+        "implications": "Front-end, back-end, and timeseries library need changes.",
+        "ownership": "Data scientists own quality; product functionality is ours.",
+    },
+}
+
+
+def _record_json(**overrides) -> str:
+    payload = {**RECORD_JSON, **overrides}
+    return json.dumps(payload)
+
+
 def test_build_record_extraction_conversation_includes_dump() -> None:
     messages = build_record_extraction_conversation(
         "We are dropping Redis",
@@ -29,130 +56,116 @@ def test_build_record_extraction_conversation_includes_dump() -> None:
     assert "We are dropping Redis" in messages[1]["content"]
 
 
-def test_extraction_loop_qa_then_record() -> None:
-    calls: list[list[dict[str, str]]] = []
+def test_record_extraction_prompt_uses_canonical_json_format() -> None:
+    prompt = get_prompt(PromptName.RECORD_EXTRACTION)
+    canonical = format_extraction_record_return()
 
-    def fake_send(messages, **_kwargs):
-        calls.append(list(messages))
-        if len(calls) == 1:
-            return CLARIFYING
-        return COMPLETE
-
-    prompt_user = MagicMock(return_value="PostgreSQL only, no Redis.")
-
-    record = run_record_extraction_loop(
-        "Dropping Redis for sessions",
-        resolve_data_paths(Path("/tmp/whyline-extract-1")),
-        prompt_user=prompt_user,
-        send=fake_send,
-    )
-
-    assert record.decision == "Drop Redis for session storage"
-    assert is_complete_record(COMPLETE)
-    prompt_user.assert_called_once()
-    assert len(calls) == 2
+    assert canonical in prompt
+    assert "Return ONLY one JSON object" in prompt
+    assert "No markdown, no YAML, no prose" in prompt
+    assert "record_complete" in prompt
 
 
-def test_extraction_loop_accepts_record_with_preamble_and_trailing_prose() -> None:
-    preamble_record = (
-        "Thanks! Here is the record:\n\n"
-        f"{COMPLETE}\n\n"
-        "Happy to help if you need edits.\n"
-    )
-
-    record = run_record_extraction_loop(
-        "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-embedded")),
-        prompt_user=MagicMock(),
-        send=lambda _messages, **_kwargs: preamble_record,
-    )
-
-    assert record.decision == "Drop Redis for session storage"
-
-
-def test_extraction_loop_single_shot_record() -> None:
-    prompt_user = MagicMock()
-
-    record = run_record_extraction_loop(
-        "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-2")),
-        prompt_user=prompt_user,
-        send=lambda _messages, **_kwargs: COMPLETE,
-    )
-
-    assert record.decision == "Drop Redis for session storage"
-    prompt_user.assert_not_called()
-
-
-def test_extraction_loop_two_clarifying_rounds_then_wrap_up() -> None:
+def test_extraction_loop_qa_then_json_record() -> None:
     calls: list[list[dict[str, str]]] = []
 
     def fake_send(messages, **_kwargs):
         calls.append(list(messages))
         if len(calls) <= 2:
             return CLARIFYING
-        return COMPLETE
+        return _record_json()
 
     prompt_user = MagicMock(side_effect=["answer one", "answer two"])
 
     record = run_record_extraction_loop(
-        "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-3")),
+        "Standardize sampling rates",
+        resolve_data_paths(Path("/tmp/whyline-extract-json-1")),
         prompt_user=prompt_user,
         send=fake_send,
     )
 
-    assert record.decision == "Drop Redis for session storage"
+    assert record.decision.startswith("Standardize sampling-rate")
+    assert record.type.value == "problem-statement"
+    assert record.status.value == "tentative"
+    assert record.people == ["Rudy"]
+    assert record.body.rationale is not None
     assert prompt_user.call_count == 2
     assert len(calls) == 3
+
+
+def test_extraction_loop_two_clarifying_rounds_then_json_wrap_up() -> None:
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_send(messages, **_kwargs):
+        calls.append(list(messages))
+        if len(calls) <= 2:
+            return CLARIFYING
+        return _record_json()
+
+    record = run_record_extraction_loop(
+        "Dropping Redis",
+        resolve_data_paths(Path("/tmp/whyline-extract-json-2")),
+        prompt_user=MagicMock(side_effect=["answer one", "answer two"]),
+        send=fake_send,
+    )
+
+    assert record.record_complete is True
     round_two_user_texts = [m["content"] for m in calls[1] if m["role"] == "user"]
     assert FINAL_CLARIFYING_ROUND_NUDGE in round_two_user_texts
     wrap_up_users = [m["content"] for m in calls[2] if m["role"] == "user"]
-    assert any(WRAP_UP_USER_MESSAGE in text for text in wrap_up_users)
+    canonical = format_extraction_record_return(date_value=date.today().isoformat())
+    assert any("CONVERSATION ENDED" in text for text in wrap_up_users)
+    assert any(date.today().isoformat() in text for text in wrap_up_users)
+    assert any(canonical in text for text in wrap_up_users)
 
 
-def test_extraction_loop_raises_after_failed_wrap_up() -> None:
-    def always_clarify(_messages, **_kwargs):
+def test_extraction_loop_retries_invalid_json_then_succeeds() -> None:
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_send(messages, **_kwargs):
+        calls.append(list(messages))
+        if len(calls) <= 2:
+            return CLARIFYING
+        if len(calls) == 3:
+            return json.dumps({**RECORD_JSON, "type": "not-a-real-type"})
+        return _record_json()
+
+    record = run_record_extraction_loop(
+        "Standardize frequency handling",
+        resolve_data_paths(Path("/tmp/whyline-extract-json-retry")),
+        prompt_user=lambda _q: "details",
+        send=fake_send,
+    )
+
+    assert record.decision.startswith("Standardize sampling-rate")
+    assert len(calls) == 4
+    retry_user_texts = [m["content"] for m in calls[3] if m["role"] == "user"]
+    assert any(
+        "previous response did not validate" in text
+        for text in retry_user_texts
+    )
+
+
+def test_extraction_loop_raises_after_failed_json_finalization() -> None:
+    def always_invalid(_messages, **_kwargs):
         return CLARIFYING
 
     with pytest.raises(RecordExtractionError, match="wrap-up"):
         run_record_extraction_loop(
             "Dropping Redis",
-            resolve_data_paths(Path("/tmp/whyline-extract-4")),
+            resolve_data_paths(Path("/tmp/whyline-extract-json-fail")),
             prompt_user=lambda _q: "answers",
-            send=always_clarify,
+            send=always_invalid,
         )
-
-
-def test_extraction_loop_wrap_up_retries_then_succeeds() -> None:
-    calls: list[int] = []
-
-    def fake_send(_messages, **_kwargs):
-        calls.append(len(calls))
-        if len(calls) <= 2:
-            return CLARIFYING
-        if len(calls) == 3:
-            return "Still thinking..."
-        return COMPLETE
-
-    record = run_record_extraction_loop(
-        "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-retry")),
-        prompt_user=lambda _q: "detail",
-        send=fake_send,
-    )
-
-    assert record.decision == "Drop Redis for session storage"
-    assert len(calls) == 4
 
 
 def test_extraction_loop_detailed_returns_messages() -> None:
     result = run_record_extraction_loop_detailed(
         "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-5")),
+        resolve_data_paths(Path("/tmp/whyline-extract-json-detailed")),
         prompt_user=lambda _q: "ok",
-        send=lambda _messages, **_kwargs: COMPLETE,
+        send=lambda _messages, **_kwargs: _record_json(),
     )
 
     assert result.clarifying_rounds == 0
-    assert len(result.messages) >= 2
+    assert len(result.messages) >= 3

@@ -16,6 +16,23 @@ def _fake_response(text: str = "assistant reply") -> SimpleNamespace:
     )
 
 
+def _fake_tool_response(arguments: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(
+                    content=None,
+                    tool_calls=[
+                        SimpleNamespace(
+                            function=SimpleNamespace(arguments=arguments)
+                        )
+                    ],
+                )
+            )
+        ]
+    )
+
+
 def test_send_messages_returns_assistant_text() -> None:
     config = LlmConfig(provider="claude", model="claude-sonnet-4-20250514")
     messages = [{"role": "user", "content": "Say ok"}]
@@ -33,6 +50,39 @@ def test_send_messages_returns_assistant_text() -> None:
     assert call_kwargs["model"] == "anthropic/claude-sonnet-4-20250514"
     assert call_kwargs["messages"] == messages
     assert call_kwargs["api_key"] == "sk-test"
+
+
+def test_send_messages_passes_response_format() -> None:
+    config = LlmConfig(provider="openai", model="gpt-4o-mini")
+    messages = [{"role": "user", "content": "Extract"}]
+    response_format = {"type": "json_object"}
+    mock_completion = MagicMock(return_value=_fake_response('{"ok": true}'))
+
+    with (
+        patch("whyline.llm.client.get_api_key", return_value="sk-test"),
+        patch("whyline.llm.client._call_litellm", mock_completion),
+    ):
+        result = send_messages(
+            messages,
+            config=config,
+            response_format=response_format,
+        )
+
+    assert result == '{"ok": true}'
+    assert mock_completion.call_args.kwargs["response_format"] == response_format
+
+
+def test_send_messages_returns_tool_arguments_when_content_empty() -> None:
+    config = LlmConfig(provider="claude", model="claude-sonnet-4-20250514")
+    mock_completion = MagicMock(return_value=_fake_tool_response('{"ok": true}'))
+
+    with (
+        patch("whyline.llm.client.get_api_key", return_value="sk-test"),
+        patch("whyline.llm.client._call_litellm", mock_completion),
+    ):
+        result = send_messages([{"role": "user", "content": "Extract"}], config=config)
+
+    assert result == '{"ok": true}'
 
 
 def test_send_messages_ollama_uses_api_base_without_api_key() -> None:

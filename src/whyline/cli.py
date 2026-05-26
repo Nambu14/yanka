@@ -5,6 +5,7 @@ import click
 from whyline import __version__
 from whyline.paths import DataPaths, resolve_data_paths
 from whyline.rebuild import rebuild_indexes
+from whyline.repl import run_repl
 from whyline.setup import config_exists, run_first_run
 
 CONTEXT_KEY = "paths"
@@ -26,17 +27,15 @@ def main(ctx: click.Context, data_dir: Path | None) -> None:
     """Capture engineering decisions and retrieve them later."""
     ctx.ensure_object(dict)
     paths = resolve_data_paths(data_dir)
-    ran_setup = False
 
     if not config_exists(paths):
         paths, _config = run_first_run(bootstrap=paths)
         paths = resolve_data_paths(data_dir or paths.data_dir)
-        ran_setup = True
 
     ctx.obj[CONTEXT_KEY] = paths
 
-    if ctx.invoked_subcommand is None and not ran_setup:
-        click.echo(ctx.get_help())
+    if ctx.invoked_subcommand is None:
+        run_repl(paths)
 
 
 @main.command("rebuild")

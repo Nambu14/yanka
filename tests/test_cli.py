@@ -51,6 +51,24 @@ def test_rebuild_command(tmp_path: Path) -> None:
     assert "Rebuilt indexes from 1 record(s)." in result.output
 
 
+def test_no_subcommand_enters_repl(tmp_path: Path, monkeypatch) -> None:
+    from whyline.config import default_config, save_config
+
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    save_config(paths, default_config(paths.data_dir))
+    called = []
+
+    def fake_repl(repl_paths):
+        called.append(repl_paths)
+
+    monkeypatch.setattr("whyline.cli.run_repl", fake_repl)
+
+    result = CliRunner().invoke(main, ["--data-dir", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert called == [paths]
+
+
 def test_get_data_paths_from_context(tmp_path: Path) -> None:
     ctx = click.Context(main)
     ctx.ensure_object(dict)

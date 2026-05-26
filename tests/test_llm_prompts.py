@@ -39,7 +39,7 @@ def test_unknown_prompt_raises() -> None:
 
 def test_record_extraction_marker() -> None:
     text = get_prompt(PromptName.RECORD_EXTRACTION)
-    assert "record_complete: true" in text
+    assert '"record_complete": true' in text
     assert "technical decision recorder" in text
     assert "at most 3" in text
     assert "at most 2" in text

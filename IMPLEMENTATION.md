@@ -236,9 +236,11 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 | Step | Task | Verify |
 |------|------|--------|
-| 8.1 | REPL loop | `/help` |
-| 8.2 | `/status`, `/history`, `/rebuild` | Seeded data |
-| 8.3 | `/log` | Full manual session |
+| 8.1 | REPL loop | `/help` | ✓ |
+| 8.2 | `/status`, `/history`, `/rebuild` | Seeded data | ✓ |
+| 8.3 | `/log` REPL command | Mocked ingest session | ✓ |
+| 8.3a-c | `/log` extraction hardening | No traceback; explicit format | ✓ |
+| 8.3d | JSON record extraction contract | LLM JSON → `Record` → Markdown | ✓ |
 | 8.4 | `/ask` | Answer from KB |
 | 8.5 | Rich UX polish | spec §11 checklist |
 | 8.6 | `/resume` | interrupt → resume |

@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from typing import Any, Literal
 
 from whyline.config import LlmConfig
+from whyline.llm.capabilities import (
+    StructuredOutputMode,
+    response_format_for_mode,
+    structured_output_modes,
+)
 from whyline.llm.client import LlmError, send_messages
 from whyline.paths import DataPaths
 
@@ -17,6 +23,10 @@ _FENCE_PATTERN = re.compile(r"```(?:json)?\s*\n?(.*?)```", re.DOTALL | re.IGNORE
 
 class JsonParseError(LlmError):
     """LLM response text could not be parsed as JSON."""
+
+
+class JsonValidationError(JsonParseError):
+    """Parsed JSON did not satisfy the expected application schema."""
 
 
 def parse_llm_json(text: str, *, expect: ExpectJson = None) -> Any:
@@ -66,6 +76,62 @@ def fetch_llm_json(
     raise last_error
 
 
+def fetch_typed_json[T](
+    messages: list[dict[str, str]],
+    *,
+    schema_name: str,
+    schema: dict,
+    validate: Callable[[Any], T],
+    expect: ExpectJson = "object",
+    max_attempts: int = 2,
+    paths: DataPaths | None = None,
+    config: LlmConfig | None = None,
+    send: Callable[..., str] | None = None,
+) -> T:
+    """Fetch JSON using strongest available provider mode, then validate."""
+    if max_attempts < 1:
+        msg = "max_attempts must be at least 1"
+        raise ValueError(msg)
+
+    sender = send if send is not None else send_messages
+    last_error: LlmError | None = None
+    modes = structured_output_modes(config)
+    for mode in modes:
+        response_format = response_format_for_mode(
+            mode,
+            schema_name=schema_name,
+            schema=schema,
+        )
+        mode_messages = _messages_for_mode(messages, mode, schema_name, schema)
+        for attempt_index in range(max_attempts):
+            attempt_messages = _retry_messages(mode_messages, last_error)
+            try:
+                raw = sender(
+                    attempt_messages,
+                    paths=paths,
+                    config=config,
+                    response_format=response_format,
+                )
+                parsed = parse_llm_json(raw, expect=expect)
+                return validate(parsed)
+            except JsonParseError as exc:
+                last_error = exc
+                continue
+            except ValueError as exc:
+                last_error = JsonValidationError(str(exc))
+                continue
+            except LlmError as exc:
+                last_error = exc
+                if mode is StructuredOutputMode.TEXT:
+                    raise
+                break
+
+    if last_error is not None:
+        raise last_error
+    msg = "LLM response did not produce valid typed JSON"
+    raise JsonValidationError(msg)
+
+
 def _validate_expect(value: Any, expect: ExpectJson) -> None:
     if expect is None:
         return
@@ -100,6 +166,40 @@ def _json_candidates(text: str) -> list[str]:
                 add(slice_text)
             index = stripped.find(opener, index + 1)
     return candidates
+
+
+def _messages_for_mode(
+    messages: list[dict[str, str]],
+    mode: StructuredOutputMode,
+    schema_name: str,
+    schema: dict,
+) -> list[dict[str, str]]:
+    if mode is StructuredOutputMode.JSON_SCHEMA:
+        return messages
+    schema_text = json.dumps(schema, sort_keys=True)
+    suffix = (
+        f"Return ONLY a JSON object named {schema_name} matching this schema. "
+        f"No prose, no markdown fences.\nSchema:\n{schema_text}"
+    )
+    return [*messages, {"role": "user", "content": suffix}]
+
+
+def _retry_messages(
+    messages: list[dict[str, str]],
+    error: LlmError | None,
+) -> list[dict[str, str]]:
+    if error is None:
+        return messages
+    return [
+        *messages,
+        {
+            "role": "user",
+            "content": (
+                "The previous response did not validate. "
+                f"Fix the JSON only. Error: {error}"
+            ),
+        },
+    ]
 
 
 def _balanced_json_slice(text: str, start: int) -> str | None:

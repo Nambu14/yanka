@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -33,6 +34,23 @@ pytest.importorskip("lancedb")
 
 FIXTURES = Path(__file__).parent / "fixtures" / "records"
 COMPLETE = (FIXTURES / "valid-decision.md").read_text(encoding="utf-8")
+COMPLETE_JSON = json.dumps(
+    {
+        "date": "2026-05-14",
+        "type": "decision",
+        "status": "active",
+        "record_complete": True,
+        "context_path": ["main-platform", "auth-service"],
+        "people": ["Carlos"],
+        "supersedes": None,
+        "tags": ["infrastructure"],
+        "decision": "Drop Redis for session storage",
+        "body": {
+            "rationale": "We chose PostgreSQL.",
+            "raw_input": "user pasted --- here, not a fence",
+        },
+    }
+)
 
 CLAIMS = [
     {
@@ -116,7 +134,7 @@ def test_ingest_pipeline_happy_path(paths, graph) -> None:
         "Dropping Redis for sessions",
         paths,
         prompt_user=prompt_user,
-        send=lambda _messages, **_kwargs: COMPLETE,
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
         fetch_json=_mock_fetch(),
         graph=graph,
         filename="2026-05-14-drop-redis.md",
@@ -180,7 +198,7 @@ def test_ingest_pipeline_with_confirmed_conflict(paths, graph) -> None:
         "JWT tokens now last 30 minutes",
         paths,
         prompt_user=MagicMock(return_value="unused"),
-        send=lambda _messages, **_kwargs: COMPLETE,
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
         fetch_json=_mock_fetch(conflicts=conflicts, claims=CONFLICT_CLAIMS),
         prompt_confirm=prompt_confirm,
         graph=graph,

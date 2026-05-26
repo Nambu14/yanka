@@ -27,6 +27,7 @@ def send_messages(
     *,
     paths: DataPaths | None = None,
     config: LlmConfig | None = None,
+    response_format: dict | None = None,
 ) -> str:
     """Send a message list to the configured LLM and return assistant text."""
     if not messages:
@@ -35,7 +36,11 @@ def send_messages(
 
     resolved = paths if paths is not None else resolve_data_paths()
     llm_config = config if config is not None else load_config(resolved).llm
-    kwargs = _build_completion_kwargs(llm_config, messages)
+    kwargs = _build_completion_kwargs(
+        llm_config,
+        messages,
+        response_format=response_format,
+    )
     response = _call_litellm(**kwargs)
     return _extract_assistant_text(response)
 
@@ -43,12 +48,16 @@ def send_messages(
 def _build_completion_kwargs(
     config: LlmConfig,
     messages: list[dict[str, str]],
+    *,
+    response_format: dict | None = None,
 ) -> dict[str, Any]:
     provider = config.provider.lower()
     kwargs: dict[str, Any] = {
         "model": _litellm_model(provider, config.model),
         "messages": messages,
     }
+    if response_format is not None:
+        kwargs["response_format"] = response_format
 
     if provider == "ollama":
         kwargs["api_base"] = config.endpoint or DEFAULT_OLLAMA_BASE
@@ -91,11 +100,33 @@ def _call_litellm(**kwargs: Any) -> Any:
 
 def _extract_assistant_text(response: Any) -> str:
     try:
-        content = response.choices[0].message.content
+        message = response.choices[0].message
+        content = message.content
     except (AttributeError, IndexError, TypeError) as exc:
         msg = "LLM response did not contain assistant message content"
         raise LlmError(msg) from exc
+
+    if content and isinstance(content, str):
+        return content
+
+    tool_arguments = _extract_tool_arguments(message)
+    if tool_arguments is not None:
+        return tool_arguments
+
     if not content or not isinstance(content, str):
         msg = "LLM returned empty assistant message content"
         raise LlmError(msg)
     return content
+
+
+def _extract_tool_arguments(message: Any) -> str | None:
+    tool_calls = getattr(message, "tool_calls", None)
+    if not tool_calls:
+        return None
+    try:
+        arguments = tool_calls[0].function.arguments
+    except (AttributeError, IndexError, TypeError):
+        return None
+    if isinstance(arguments, str) and arguments.strip():
+        return arguments
+    return None

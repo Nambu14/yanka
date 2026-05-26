@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 
 from whyline.config import EmbeddingConfig, LlmConfig, load_config
 from whyline.ingest.context_search import (
@@ -12,32 +13,33 @@ from whyline.ingest.context_search import (
 )
 from whyline.llm import get_prompt
 from whyline.llm.client import LlmError, send_messages
-from whyline.llm.prompts import PromptName
+from whyline.llm.json_parse import JsonParseError, fetch_typed_json, parse_llm_json
+from whyline.llm.prompts import PromptName, format_extraction_record_return
 from whyline.paths import DataPaths, resolve_data_paths
-from whyline.records.models import Record, parse_record
-from whyline.records.validate import extract_complete_record_text
+from whyline.records.json_schema import (
+    RECORD_JSON_SCHEMA,
+    record_from_json,
+)
+from whyline.records.models import Record
 
 WRAP_UP_USER_MESSAGE = """\
 CONVERSATION ENDED — no further user replies.
 
-You MUST output ONLY the final decision record now.
-- First line: --- (start YAML frontmatter).
-- Set record_complete: true (YAML boolean).
-- Include every required frontmatter key; use [not discussed] for unknowns.
-- Then body sections (Rationale, etc.) as needed.
-- NO questions. NO preamble. NO closing remarks. NO markdown outside the record."""
+You already have enough information to write a useful record.
+You MUST output ONLY one final JSON record now.
+- Do not ask questions.
+- Do not split this into multiple records.
+- If the outcome is not final, use type: problem-statement and status: tentative.
+- Use today's date: {today}.
+- Include every required JSON key.
+- Omit unknown optional arrays/body keys instead of adding [not discussed].
+- NO questions. NO preamble. NO closing remarks. NO markdown.
 
-WRAP_UP_RETRY_MESSAGE = """\
-Your last reply was not a valid record. The conversation is still ENDED.
-
-Output ONLY the record template — nothing else.
-First character must be ---.
-Required frontmatter keys: date, type, status, record_complete, context_path, decision.
-record_complete must be boolean true."""
+{record_template}"""
 
 FINAL_CLARIFYING_ROUND_NUDGE = """\
 Final clarifying round: at most 2 brief questions in this message ONLY.
-The next user message ends Q&A — after that you must output ONLY the record."""
+The next user message ends Q&A — after that you must output ONLY the record JSON."""
 
 
 class RecordExtractionError(LlmError):
@@ -118,7 +120,7 @@ def run_record_extraction_loop_detailed(
             messages.append({"role": "user", "content": FINAL_CLARIFYING_ROUND_NUDGE})
         response = sender(messages, paths=resolved, config=llm_config)
         messages.append({"role": "assistant", "content": response})
-        record = _parse_complete_record_response(response)
+        record = _parse_record_json_response(response)
         if record is not None:
             return RecordExtractionResult(
                 record=record,
@@ -148,22 +150,41 @@ def _run_wrap_up(
     paths: DataPaths,
     config: LlmConfig | None,
 ) -> Record | None:
-    """Force final record-only turns; retry once with a stricter instruction."""
-    for instruction in (WRAP_UP_USER_MESSAGE, WRAP_UP_RETRY_MESSAGE):
-        messages.append({"role": "user", "content": instruction})
-        response = sender(messages, paths=paths, config=config)
-        messages.append({"role": "assistant", "content": response})
-        record = _parse_complete_record_response(response)
-        if record is not None:
-            return record
-    return None
-
-
-def _parse_complete_record_response(response: str) -> Record | None:
-    record_text = extract_complete_record_text(response)
-    if record_text is None:
+    """Force final JSON output and build a Record from validated data."""
+    instruction = _format_wrap_up_instruction(WRAP_UP_USER_MESSAGE)
+    messages.append({"role": "user", "content": instruction})
+    try:
+        return fetch_typed_json(
+            messages,
+            schema_name="whyline_record",
+            schema=RECORD_JSON_SCHEMA,
+            validate=record_from_json,
+            expect="object",
+            paths=paths,
+            config=config,
+            send=sender,
+        )
+    except LlmError:
         return None
-    return parse_record(record_text)
+
+
+def _format_wrap_up_instruction(template: str) -> str:
+    return template.format(
+        today=date.today().isoformat(),
+        record_template=_record_return_format(),
+    )
+
+
+def _record_return_format() -> str:
+    return format_extraction_record_return(date_value=date.today().isoformat())
+
+
+def _parse_record_json_response(response: str) -> Record | None:
+    try:
+        payload = parse_llm_json(response, expect="object")
+        return record_from_json(payload)
+    except (JsonParseError, ValueError):
+        return None
 
 
 def _initial_user_content(raw_dump: str, context_block: str) -> str:

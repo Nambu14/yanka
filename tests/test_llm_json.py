@@ -5,7 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from whyline.llm import JsonParseError, fetch_llm_json, parse_llm_json
+from whyline.config import LlmConfig
+from whyline.llm import (
+    JsonParseError,
+    LlmError,
+    fetch_llm_json,
+    fetch_typed_json,
+    parse_llm_json,
+)
 
 _FIXTURES = Path(__file__).parent / "fixtures" / "llm_json"
 
@@ -94,3 +101,76 @@ def test_fetch_llm_json_succeeds_on_first_attempt() -> None:
 
     assert data == {"conflicts": []}
     mock_send.assert_called_once()
+
+
+def test_fetch_typed_json_uses_strict_schema_when_supported() -> None:
+    calls = []
+
+    def fake_send(_messages, **kwargs):
+        calls.append(kwargs)
+        return '{"name": "Rudy"}'
+
+    data = fetch_typed_json(
+        [{"role": "user", "content": "extract"}],
+        schema_name="person",
+        schema={"type": "object", "properties": {"name": {"type": "string"}}},
+        validate=lambda payload: payload,
+        config=LlmConfig(provider="openai", model="gpt-4o-mini"),
+        send=fake_send,
+    )
+
+    assert data == {"name": "Rudy"}
+    assert calls[0]["response_format"]["type"] == "json_schema"
+
+
+def test_fetch_typed_json_falls_back_to_json_object_mode() -> None:
+    calls = []
+
+    def fake_send(_messages, **kwargs):
+        calls.append(kwargs)
+        if kwargs["response_format"]["type"] == "json_schema":
+            raise LlmError("schema unsupported")
+        return '{"name": "Rudy"}'
+
+    data = fetch_typed_json(
+        [{"role": "user", "content": "extract"}],
+        schema_name="person",
+        schema={"type": "object", "properties": {"name": {"type": "string"}}},
+        validate=lambda payload: payload,
+        config=LlmConfig(provider="openai", model="gpt-4o-mini"),
+        send=fake_send,
+    )
+
+    assert data == {"name": "Rudy"}
+    assert [call["response_format"]["type"] for call in calls] == [
+        "json_schema",
+        "json_object",
+    ]
+
+
+def test_fetch_typed_json_retries_validation_errors() -> None:
+    calls = []
+
+    def validate(payload):
+        if "name" not in payload:
+            raise ValueError("missing name")
+        return payload
+
+    def fake_send(messages, **kwargs):
+        calls.append((messages, kwargs))
+        if len(calls) == 1:
+            return '{"bad": true}'
+        return '{"name": "Rudy"}'
+
+    data = fetch_typed_json(
+        [{"role": "user", "content": "extract"}],
+        schema_name="person",
+        schema={"type": "object", "properties": {"name": {"type": "string"}}},
+        validate=validate,
+        config=LlmConfig(provider="ollama", model="qwen3:8b"),
+        send=fake_send,
+    )
+
+    assert data == {"name": "Rudy"}
+    retry_messages = calls[1][0]
+    assert "previous response did not validate" in retry_messages[-1]["content"]

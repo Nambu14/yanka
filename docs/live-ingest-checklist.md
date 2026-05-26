@@ -1,6 +1,8 @@
-# Live ingest smoke (6.12b)
+# Live ingest smoke (`/log`)
 
-Manual verification that `run_ingest_pipeline` works with a **real LLM** (OpenAI recommended). There is no `/log` REPL yet (Phase 8); use `scripts/live_ingest.py` for a one-shot session.
+Manual verification that `run_ingest_pipeline` and the REPL `/log` command work
+with a **real LLM**. OpenAI `gpt-4o-mini` or Gemini Flash are recommended for
+cheap structured-output testing.
 
 ## Prerequisites
 
@@ -21,16 +23,22 @@ Manual verification that `run_ingest_pipeline` works with a **real LLM** (OpenAI
 
 1. Run:
    ```bash
-   python scripts/live_ingest.py "We're moving session storage from Redis to PostgreSQL. Carlos owns the migration."
+   whyline
+   /log
    ```
-2. If the model asks clarifying questions, answer in the terminal.
-3. If a **Possible conflict** panel appears, you can answer `n` unless you intend to test supersession.
+2. Paste a decision note, e.g.:
+   ```text
+   We're moving session storage from Redis to PostgreSQL. Carlos owns the migration.
+   ```
+3. If the model asks clarifying questions, answer in the terminal.
+4. If a **Possible conflict** panel appears, you can answer `n` unless you intend to test supersession.
 
 **Pass if:**
 
 - [ ] Green **Record saved** panel appears
 - [ ] New file under `~/.whyline/records/*.md` (or your `--data-dir`)
 - [ ] Frontmatter includes `record_complete: true`, `context_path`, `decision`, and a `claims` list
+- [ ] Extraction used JSON internally; no malformed YAML/frontmatter warning appears
 - [ ] `changelog.jsonl` has a new line with `"action": "create"`
 - [ ] No traceback; index warnings (if any) mention `whyline rebuild`
 
@@ -59,7 +67,7 @@ whyline rebuild
 | Symptom | What to try |
 |--------|-------------|
 | API key error | Re-run Keychain setup; check `llm.provider: openai` |
-| Empty or invalid record | Retry with a longer dump; check model name |
+| Invalid JSON record | Prefer `gpt-4o-mini`, Gemini 2.x Flash, or Claude Sonnet; avoid weak local models |
 | Index warning only | Record is still saved; run `whyline rebuild` |
 | Hang / slow | Normal on first run (local embedding download) |
 
@@ -68,4 +76,4 @@ whyline rebuild
 - [ ] M3 happy path completed on: ___________
 - [ ] M4 conflict (optional) completed on: ___________
 
-When M3 passes, mark **6.12b** ✓ in `IMPLEMENTATION.md`.
+When M3 passes, keep **8.3d** ✓ in `IMPLEMENTATION.md`.

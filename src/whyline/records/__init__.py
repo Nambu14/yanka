@@ -13,6 +13,11 @@ from whyline.records.frontmatter import (
     split_markdown,
 )
 from whyline.records.io import iter_records, read_record, write_record
+from whyline.records.json_schema import (
+    RECORD_JSON_SCHEMA,
+    RecordJsonError,
+    record_from_json,
+)
 from whyline.records.markdown import record_to_frontmatter_dict, record_to_markdown
 from whyline.records.models import (
     Claim,
@@ -53,6 +58,8 @@ __all__ = [
     "RecordFile",
     "RecordStatus",
     "RecordType",
+    "RECORD_JSON_SCHEMA",
+    "RecordJsonError",
     "is_complete_record",
     "iter_changelog",
     "iter_records",
@@ -62,6 +69,7 @@ __all__ = [
     "parse_record_markdown",
     "record_filename",
     "record_from_frontmatter",
+    "record_from_json",
     "record_to_frontmatter_dict",
     "record_to_markdown",
     "slugify_decision",
