@@ -125,6 +125,22 @@ def test_analyze_query_mocked() -> None:
 
     assert result.query_type is QueryType.CURRENT_STATE
     assert result.semantic_query == "session storage"
+    assert result.filters.project == "main-platform"
+
+
+def test_analyze_query_drops_project_not_mentioned_in_question() -> None:
+    raw = json.loads((FIXTURES / "current_state.json").read_text())
+
+    def fetch(_messages: list, **kwargs: object) -> dict:
+        return raw
+
+    result = analyze_query(
+        "What's our current approach to session storage?",
+        fetch_json=fetch,
+    )
+
+    assert result.query_type is QueryType.CURRENT_STATE
+    assert result.filters.project is None
 
 
 def test_analyze_query_json_parse_error() -> None:

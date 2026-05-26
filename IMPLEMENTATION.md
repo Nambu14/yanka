@@ -222,11 +222,11 @@ Build bottom-up: write path first, then conversation, then intelligence.
 | 7.1 | Query analysis (prompt 4) | Per query-type fixtures | ✓ |
 | 7.2 | Graph retrieve by type | §8 table | ✓ |
 | 7.3 | Vector retrieve by type | Filters from analysis | ✓ |
-| 7.4 | Graph-anchored merge | Superseded trap case |
-| 7.5 | Synthesis (prompt 5) | Mock with record bundle |
-| 7.6 | Output formatting | citations, timeline, staleness |
-| 7.7a | Retrieval orchestrator (mocked) | `pytest` E2E with mocked LLM |
-| 7.7b | Retrieval orchestrator (live) | One manual `/ask` with real API key |
+| 7.4 | Graph-anchored merge | Superseded trap case | ✓ |
+| 7.5 | Synthesis (prompt 5) | Mock with record bundle | ✓ |
+| 7.6 | Output formatting | citations, timeline, staleness | ✓ |
+| 7.7a | Retrieval orchestrator (mocked) | `pytest` E2E with mocked LLM | ✓ |
+| 7.7b | Retrieval orchestrator (live) | One manual `/ask` with real API key | ✓ |
 
 **Gate:** 7.7a must pass before 7.7b.
 

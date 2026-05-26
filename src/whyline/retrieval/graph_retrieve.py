@@ -4,16 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
 
 from whyline.config import default_config, load_config
 from whyline.graph.retrieve import GraphRetrieveFilters, retrieve_decisions_by_type
 from whyline.graph.store import GraphDb
 from whyline.paths import DataPaths, resolve_data_paths
 from whyline.retrieval.query_analysis import QueryAnalysis
-from whyline.retrieval_enums import QueryType, StatusFilter
-
-GraphHitSource = Literal["graph"]
+from whyline.retrieval_enums import QueryType, RetrievalSource, StatusFilter
 
 
 @dataclass(frozen=True)
@@ -25,7 +22,7 @@ class GraphRetrievalHit:
     status: str
     summary: str
     context_canonical: str
-    source: GraphHitSource = "graph"
+    source: RetrievalSource = RetrievalSource.GRAPH
 
 
 def retrieve_from_graph(

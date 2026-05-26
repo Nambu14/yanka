@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any
 
 from whyline.config import EmbeddingConfig, default_config, load_config
 from whyline.graph.conflicts import graph_conflict_candidates
 from whyline.graph.store import GraphDb
 from whyline.paths import DataPaths, resolve_data_paths
-from whyline.records.models import Claim
+from whyline.records.models import Claim, ClaimStatus
+from whyline.retrieval_enums import RetrievalSource
 from whyline.vectors.filters import VectorSearchFilters
 from whyline.vectors.search import search_claims
 
-ConflictSource = Literal["graph", "vector"]
 type SearchClaimsFn = Callable[..., list[dict[str, Any]]]
 
 
@@ -26,7 +26,7 @@ class ConflictCandidate:
     content: str
     source_file: str
     status: str
-    source: ConflictSource
+    source: RetrievalSource
     similarity: float | None = None
 
 
@@ -80,7 +80,7 @@ def vector_conflict_candidates(
     resolved = paths if paths is not None else resolve_data_paths()
     per_claim_limit = _resolve_conflict_search_limit(resolved, limit_per_claim)
     filters = VectorSearchFilters(
-        status="active",
+        status=ClaimStatus.ACTIVE.value,
         project=context_path[0],
         context_path_prefix=_context_path_prefix(context_path),
     )
@@ -141,7 +141,7 @@ def _candidate_from_graph_row(row: dict[str, Any]) -> ConflictCandidate:
         content=str(row["content"]),
         source_file=str(row["source_file"]),
         status=str(row["status"]),
-        source="graph",
+        source=RetrievalSource.GRAPH,
     )
 
 
@@ -161,7 +161,7 @@ def _candidate_from_vector_hit(hit: dict[str, Any]) -> ConflictCandidate:
         content=content,
         source_file=source_file,
         status=status,
-        source="vector",
+        source=RetrievalSource.VECTOR,
         similarity=_hit_similarity(hit),
     )
 

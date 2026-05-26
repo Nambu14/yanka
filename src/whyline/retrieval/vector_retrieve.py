@@ -5,11 +5,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Literal
+from typing import Any
 
 from whyline.config import EmbeddingConfig, default_config, load_config
 from whyline.paths import DataPaths, resolve_data_paths
 from whyline.retrieval.query_analysis import QueryAnalysis
+from whyline.retrieval_enums import RetrievalSource
 from whyline.vectors.retrieve import (
     VectorRetrieveParams,
     retrieval_search_query,
@@ -20,7 +21,6 @@ from whyline.vectors.retrieve import (
 )
 from whyline.vectors.search import search_records
 
-VectorHitSource = Literal["vector"]
 type SearchRecordsFn = Callable[..., list[dict[str, Any]]]
 
 
@@ -34,7 +34,7 @@ class VectorRetrievalHit:
     summary: str
     context_path: str
     score: float | None
-    source: VectorHitSource = "vector"
+    source: RetrievalSource = RetrievalSource.VECTOR
 
 
 def retrieve_from_vector(

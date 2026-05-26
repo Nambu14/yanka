@@ -6,6 +6,7 @@ from typing import Any
 
 from whyline.graph.context import build_context_levels
 from whyline.graph.store import GraphDb
+from whyline.records.models import ClaimStatus
 
 
 def graph_conflict_candidates(
@@ -30,10 +31,14 @@ def graph_conflict_candidates(
         "WITH c "
         "MATCH (d:Decision)-[:about]->(c) "
         "MATCH (d)-[:has_claim]->(cl:Claim) "
-        "WHERE cl.status = 'active' "
+        "WHERE cl.status = $active_status "
         "RETURN DISTINCT cl.claim_id, cl.content, cl.source_file, cl.status "
         "ORDER BY cl.claim_id",
-        parameters={"leaf": leaf, "prefix": prefix},
+        parameters={
+            "leaf": leaf,
+            "prefix": prefix,
+            "active_status": ClaimStatus.ACTIVE.value,
+        },
     ).get_all()
 
     return [

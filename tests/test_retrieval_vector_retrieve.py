@@ -12,7 +12,7 @@ from whyline.records.io import read_record
 from whyline.records.models import RecordStatus
 from whyline.retrieval.query_analysis import QueryAnalysis, QueryFilters, TimeRange
 from whyline.retrieval.vector_retrieve import VectorRetrievalHit, retrieve_from_vector
-from whyline.retrieval_enums import QueryType, StatusFilter
+from whyline.retrieval_enums import QueryType, RetrievalSource, StatusFilter
 from whyline.vectors.indexing import index_record
 from whyline.vectors.store import clear_vector_db_cache
 
@@ -99,7 +99,7 @@ def test_current_state_returns_active_only(tmp_path: Path) -> None:
     assert len(hits) == 1
     assert hits[0].file_reference.endswith("active-session.md")
     assert hits[0].status == "active"
-    assert hits[0].source == "vector"
+    assert hits[0].source is RetrievalSource.VECTOR
     assert isinstance(hits[0], VectorRetrievalHit)
 
 

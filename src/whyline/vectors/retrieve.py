@@ -83,8 +83,6 @@ def _context_path_prefix(
         return f"{project}/{segment}"
     if project:
         return project
-    if context_keywords:
-        return normalize_context_segment(context_keywords[0])
     return None
 
 

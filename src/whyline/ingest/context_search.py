@@ -8,7 +8,7 @@ from pathlib import Path
 from whyline.config import EmbeddingConfig, default_config, load_config
 from whyline.paths import DataPaths, resolve_data_paths
 from whyline.records.io import read_record
-from whyline.records.models import Record
+from whyline.records.models import Record, RecordStatus
 from whyline.vectors.filters import VectorSearchFilters
 from whyline.vectors.search import search_records
 
@@ -48,7 +48,7 @@ def search_related_records(
     hits = search_records(
         raw_dump,
         resolved,
-        filters=VectorSearchFilters(status="active"),
+        filters=VectorSearchFilters(status=RecordStatus.ACTIVE.value),
         limit=max_results,
         config=config,
     )

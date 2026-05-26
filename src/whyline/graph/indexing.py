@@ -5,7 +5,7 @@ from __future__ import annotations
 from whyline.graph.context import upsert_context_path
 from whyline.graph.store import GraphDb
 from whyline.paths import DataPaths, resolve_data_paths
-from whyline.records.models import ClaimSupersedes, Record
+from whyline.records.models import ClaimStatus, ClaimSupersedes, Record
 from whyline.vectors.indexing import claim_id_for_claim, file_reference_for_record
 
 
@@ -129,7 +129,7 @@ def _index_claim_supersedes(
         )
         conn.execute(
             f"MATCH (old:Claim {{claim_id: '{old_id}'}}) "
-            f"SET old.status = 'superseded'"
+            f"SET old.status = '{_escape(ClaimStatus.SUPERSEDED.value)}'"
         )
 
 

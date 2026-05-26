@@ -17,3 +17,8 @@ class QueryType(StrEnum):
 class StatusFilter(StrEnum):
     ACTIVE = "active"
     ALL = "all"
+
+
+class RetrievalSource(StrEnum):
+    GRAPH = "graph"
+    VECTOR = "vector"

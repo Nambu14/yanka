@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Any
 
@@ -89,7 +89,7 @@ def analyze_query(
         msg = "query analysis returned invalid JSON"
         raise QueryAnalysisError(msg) from exc
 
-    return query_analysis_from_json(data)
+    return _drop_unmentioned_project(question, query_analysis_from_json(data))
 
 
 def _parse_query_analysis(raw: dict[str, Any]) -> QueryAnalysis:
@@ -103,6 +103,26 @@ def _parse_query_analysis(raw: dict[str, Any]) -> QueryAnalysis:
         semantic_query=semantic_query,
         graph_hint=graph_hint,
     )
+
+
+def _drop_unmentioned_project(question: str, analysis: QueryAnalysis) -> QueryAnalysis:
+    project = analysis.filters.project
+    if project is None:
+        return analysis
+    if _contains_project_reference(question, project):
+        return analysis
+    filters = replace(analysis.filters, project=None)
+    return replace(analysis, filters=filters)
+
+
+def _contains_project_reference(question: str, project: str) -> bool:
+    normalized_question = _normalize_project_reference(question)
+    normalized_project = _normalize_project_reference(project)
+    return normalized_project in normalized_question
+
+
+def _normalize_project_reference(value: str) -> str:
+    return " ".join(value.lower().replace("-", " ").replace("_", " ").split())
 
 
 def _parse_query_type(value: Any) -> QueryType:

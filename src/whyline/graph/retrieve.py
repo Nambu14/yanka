@@ -9,7 +9,7 @@ from typing import Any
 
 from whyline.graph.context import normalize_context_segment
 from whyline.graph.store import GraphDb
-from whyline.retrieval_enums import QueryType
+from whyline.retrieval_enums import QueryType, StatusFilter
 
 
 @dataclass
@@ -271,12 +271,23 @@ def _decisions_in_supersedes_chain(
         return []
 
     params: dict[str, Any] = {"limit": limit}
-    context_clause = _context_subtree_clause(contexts, params)
     project_clause, project_params = _project_context_clause(filters.project)
     params.update(project_params)
     params.update(_date_params(filters))
     date_clause = _date_clause()
 
+    if contexts is None:
+        query = (
+            "MATCH (d:Decision)-[:about]->(c:Context) "
+            "MATCH (d)-[:has_claim]->(cl:Claim)-[:supersedes*1..]->(:Claim) "
+            f"WHERE {project_clause} {date_clause}"
+            "RETURN DISTINCT d.file_reference, d.date, d.status, d.summary, c.canonical_name "
+            "ORDER BY d.date ASC "
+            "LIMIT $limit"
+        )
+        return _rows_from_query(graph, query, params)
+
+    context_clause = _context_subtree_clause(contexts, params)
     query = (
         "MATCH (c:Context) "
         f"WHERE {context_clause} AND {project_clause} "
@@ -513,9 +524,9 @@ def _effective_status_filter(
     *,
     active_only: bool,
 ) -> str | None:
-    if active_only or filters.status_filter == "active":
-        return "active"
-    if filters.status_filter == "all":
+    if active_only or filters.status_filter == StatusFilter.ACTIVE.value:
+        return StatusFilter.ACTIVE.value
+    if filters.status_filter == StatusFilter.ALL.value:
         return None
     return None
 

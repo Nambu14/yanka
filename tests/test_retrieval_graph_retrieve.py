@@ -185,6 +185,30 @@ def test_historical_includes_superseded_in_subtree(tmp_path: Path) -> None:
     assert "records/auth-old.md" in refs
 
 
+def test_historical_without_context_filters_searches_all_contexts(
+    tmp_path: Path,
+) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    graph = get_graph_db(paths)
+    _seed_graph(paths, graph)
+
+    hits = retrieve_from_graph(
+        _analysis(
+            QueryType.HISTORICAL,
+            project=None,
+            context_keywords=[],
+            status_filter=StatusFilter.ALL,
+        ),
+        graph,
+        paths,
+        limit=10,
+    )
+
+    refs = {hit.file_reference for hit in hits}
+    assert "records/auth-active.md" in refs
+    assert "records/k8s.md" in refs
+
+
 def test_exploratory_scoped_to_project(tmp_path: Path) -> None:
     paths = ensure_data_layout(resolve_data_paths(tmp_path))
     graph = get_graph_db(paths)

@@ -188,6 +188,8 @@ FILTERS (only include what's in the question):
 - time_range: {after, before} in YYYY-MM-DD. "Last month" = after first of last month. "Recently" = after 30 days ago. Omit if no time mentioned.
 - status_filter: "active" for current_state, "all" for everything else unless query implies otherwise
 
+Do not infer or copy a project name from examples. If the question does not explicitly name a project, omit project.
+
 SEMANTIC QUERY: 1-6 word phrase capturing the core concept. Strip meta-question words. "What did we decide about session storage?" → "session storage". Null if purely structural (person lookup, time listing).
 
 GRAPH HINT: Brief natural language description of what graph traversal should do.

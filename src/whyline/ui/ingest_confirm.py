@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rich.console import Console, RenderableType
 from rich.panel import Panel
 from rich.text import Text
 
-from whyline.ingest.write import WriteResult
 from whyline.records.models import Claim, ClaimStatus, Record
+
+if TYPE_CHECKING:
+    from whyline.ingest.write import WriteResult
 
 _REBUILD_HINT = "Indexing incomplete — run `whyline rebuild` to fix."
 

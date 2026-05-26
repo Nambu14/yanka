@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import click
 from rich.console import Console, RenderableType
 from rich.panel import Panel
 from rich.text import Text
 
-from whyline.ingest.conflict_confirmation import ConflictPromptView
+if TYPE_CHECKING:
+    from whyline.ingest.conflict_confirmation import ConflictPromptView
 
 
 def default_conflict_prompt(
