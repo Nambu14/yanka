@@ -3,7 +3,7 @@
 Step-by-step build plan for the CLI described in [`yanka-spec.md`](yanka-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
-**Status:** Phases 0–6 complete. Next **Phase 7** (retrieval pipeline).
+**Status:** Phases 0–8 and **R.0** complete. Next **Phase 9** (wrap-up — see [`docs/phase-9-wrap-up.md`](docs/phase-9-wrap-up.md)).
 
 ---
 
@@ -258,15 +258,27 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 ---
 
-## Phase 9 — Error handling & hardening
+## Phase 9 — Wrap-up (hardening, polish, coverage)
 
-| Step | Topic |
-|------|--------|
-| 9.1 | LLM retry → save state |
-| 9.2 | Malformed record → wrap-up / abort |
-| 9.3 | Index fail after file write → warn + rebuild |
-| 9.4 | No silent failures; no user-facing tracebacks |
-| 9.5 | Broader integration tests (fixtures + mocked LLM) |
+Full plan, review findings, and slice notes: **[`docs/phase-9-wrap-up.md`](docs/phase-9-wrap-up.md)**.
+
+| Step | Topic | Verify |
+|------|--------|--------|
+| 9.0 | Reviews + plan in repo | `docs/phase-9-wrap-up.md` present | ✓ |
+| 9.1 | Typed `LlmError` + retry-once + LiteLLM import quiet | unit tests per error class |
+| 9.2 | Post-extraction failure → save state + degrade | resume tests per stage |
+| 9.3 | REPL error mapper + `click.Abort` containment | REPL error snapshots |
+| 9.4 | Real-progress activity + welcome panel + footers | REPL / pipeline tests |
+| 9.5 | `/people`, `/projects`, `/config`, `/help <cmd>` | command tests |
+| 9.6 | `repl/` split + dedupe (pure refactor) | existing tests unchanged |
+| 9.7 | Cypher hardening + fewer round trips | fuzz / graph tests |
+| 9.8 | `/ask` resilient to stale indexes | integration case |
+| 9.9 | Application logging (`runtime/yanka.log`) | log file + test silence |
+| 9.10 | Broad integration tests (real DBs, mocked LLM) | `tests/integration/` |
+| 9.11 | README + architecture + operations docs | manual review |
+| 9.12 | Live smoke (M6 exit) | `docs/live-m6-checklist.md` |
+
+**Also covers (from original 9.x):** malformed record wrap-up (8.3d), index fail warn (6.1), no user tracebacks (9.3).
 
 *(Data-dir override moved to **0.3b** — not deferred here.)*
 
