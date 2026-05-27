@@ -265,11 +265,11 @@ Full plan, review findings, and slice notes: **[`docs/phase-9-wrap-up.md`](docs/
 | Step | Topic | Verify |
 |------|--------|--------|
 | 9.0 | Reviews + plan in repo | `docs/phase-9-wrap-up.md` present | ✓ |
-| 9.1 | Typed `LlmError` + retry-once + LiteLLM import quiet | unit tests per error class |
-| 9.2 | Post-extraction failure → save state + degrade | resume tests per stage |
-| 9.3 | REPL error mapper + `click.Abort` containment | REPL error snapshots |
-| 9.4 | Real-progress activity + welcome panel + footers | REPL / pipeline tests |
-| 9.5 | `/people`, `/projects`, `/config`, `/help <cmd>` | command tests |
+| 9.1 | Typed `LlmError` + retry-once + LiteLLM import quiet | unit tests per error class | ✓ |
+| 9.2 | Post-extraction failure → save state + degrade | resume tests per stage | ✓ |
+| 9.3 | REPL error mapper + `click.Abort` containment | REPL error snapshots | ✓ |
+| 9.4 | Real-progress activity + welcome panel + footers | REPL / pipeline tests | ✓ |
+| 9.5 | `/people`, `/projects`, `/config`, `/help <cmd>` | command tests | ✓ |
 | 9.6 | `repl/` split + dedupe (pure refactor) | existing tests unchanged |
 | 9.7 | Cypher hardening + fewer round trips | fuzz / graph tests |
 | 9.8 | `/ask` resilient to stale indexes | integration case |
