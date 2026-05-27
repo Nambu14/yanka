@@ -12,8 +12,14 @@ license = { text = "MIT" }
 authors = [{ name = "Lucas" }]
 dependencies = [
     "click>=8.0,<9",
+    "fastembed>=0.5,<1",
     "keyring>=25.0,<26",
+    "ladybug>=0.16,<1",
+    "lancedb>=0.20,<1",
+    "litellm>=1.0,<2",
+    "numpy>=1.26,<3",
     "prompt_toolkit>=3.0,<4",
+    "pyarrow>=15,<22",
     "pyyaml>=6.0,<7",
     "rich>=13.0,<14",
 ]
@@ -32,6 +38,7 @@ embedding = [
 vectors = [
     "lancedb>=0.20,<1",
     "numpy>=1.26,<3",
+    "pyarrow>=15,<22",
 ]
 graph = [
     "ladybug>=0.16,<1",
@@ -44,6 +51,7 @@ spike = [
     "lancedb>=0.20,<1",
     "litellm>=1.0,<2",
     "numpy>=1.26,<3",
+    "pyarrow>=15,<22",
 ]
 
 [tool.hatch.build.targets.wheel]
