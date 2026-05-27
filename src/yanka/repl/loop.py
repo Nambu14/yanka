@@ -25,6 +25,7 @@ from yanka.repl.format import (
 )
 from yanka.repl.help_topics import format_help_topic, list_help_topics
 from yanka.repl.prompts import build_prompt_adapters
+from yanka.repl.statusline_cache import StatuslineCache
 from yanka.repl.types import (
     AnswerDisplayFn,
     AskRunner,
@@ -57,9 +58,10 @@ def run_repl(
 
     print_welcome_panel(output, paths)
     output("")
+    statusline_cache = StatuslineCache(paths)
 
     while True:
-        print_statusline(output, format_statusline(paths))
+        print_statusline(output, format_statusline(paths, cache=statusline_cache))
         try:
             raw = prompt(PROMPT)
         except (EOFError, KeyboardInterrupt):
@@ -103,14 +105,17 @@ def run_repl(
             continue
         if command == "/rebuild":
             output(run_repl_rebuild(paths))
+            statusline_cache.invalidate()
             continue
         if command == "/resume":
-            run_resume_command(
+            resume_result = run_resume_command(
                 paths,
                 input_fn=prompt,
                 output_fn=output,
                 ingest_runner=log_runner,
             )
+            if _saved_record(resume_result):
+                statusline_cache.invalidate()
             continue
         if command == "/log" or command.startswith("/log "):
             statement = command[4:].strip() if command.startswith("/log ") else ""
@@ -124,7 +129,7 @@ def run_repl(
                     output("Cancelled. Pending work kept.")
                     continue
                 clear_pending_log_session(paths)
-            run_log_command(
+            log_result = run_log_command(
                 paths,
                 statement=statement,
                 input_fn=prompt,
@@ -132,6 +137,8 @@ def run_repl(
                 output_fn=output,
                 ingest_runner=log_runner,
             )
+            if _saved_record(log_result):
+                statusline_cache.invalidate()
             continue
         if command == "/ask" or command.startswith("/ask "):
             question = command[4:].strip() if command.startswith("/ask ") else ""
@@ -148,3 +155,8 @@ def run_repl(
             output(f"Unknown command: {command}. Type /help for commands.")
             continue
         output("Commands start with /. Type /help for commands.")
+
+
+def _saved_record(result: object | None) -> bool:
+    write_result = getattr(result, "write_result", None)
+    return getattr(write_result, "path", None) is not None

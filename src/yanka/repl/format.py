@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yanka.paths import DataPaths
 from yanka.records.io import iter_records
+from yanka.repl.statusline_cache import StatuslineCache
 
 
 def format_status(paths: DataPaths) -> str:
@@ -67,13 +68,20 @@ def format_last(paths: DataPaths) -> str:
     )
 
 
-def format_statusline(paths: DataPaths) -> str:
+def format_statusline(
+    paths: DataPaths,
+    *,
+    cache: StatuslineCache | None = None,
+) -> str:
     """One-line prompt context summary."""
-    records = list(iter_records(paths))
+    if cache is not None:
+        record_count = cache.record_count()
+    else:
+        record_count = sum(1 for _ in iter_records(paths))
     llm_label = "llm: default"
     if paths.config_path.is_file():
         from yanka.config import load_config
 
         config = load_config(paths)
         llm_label = f"llm: {config.llm.provider}/{config.llm.model}"
-    return f"dir: {paths.data_dir.name} | records: {len(records)} | {llm_label}"
+    return f"dir: {paths.data_dir.name} | records: {record_count} | {llm_label}"

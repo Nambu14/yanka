@@ -71,7 +71,7 @@ Ship **v1** by closing gaps between as-built code and the spec: error handling, 
 Execute **one step at a time** per `IMPLEMENTATION.md` working agreement: plan → approve → implement → verify → report.
 
 ```
-R.0 ✓ → 9.0 ✓ → 9.1 ✓ → 9.2 ✓ → 9.3 ✓ → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9 → 9.10 → 9.11 → 9.12
+R.0 ✓ → 9.0 ✓ → 9.1 ✓ → 9.2 ✓ → 9.3 ✓ → 9.4 ✓ → 9.5 ✓ → 9.6 ✓ → 9.7 → 9.8 → 9.9 → 9.10 → 9.11 → 9.12
 ```
 
 | ID | Title | Deliverable summary |
