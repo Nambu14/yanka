@@ -16,6 +16,7 @@ from yanka.graph.aliases import (
 )
 from yanka.graph.context import normalize_context_segment
 from yanka.graph.store import GraphDb
+from yanka.ingest.pipeline_stages import ENTITY_RESOLUTION_DEGRADE_WARNING
 from yanka.llm import fetch_llm_json, get_prompt
 from yanka.llm.client import LlmError
 from yanka.llm.prompts import PromptName
@@ -46,6 +47,23 @@ def resolve_record_context_path(
     """Return a copy of the record with a resolved context_path."""
     resolved = resolve_context_path(record.context_path, graph, **kwargs)
     return replace(record, context_path=resolved)
+
+
+def resolve_record_context_path_degrading(
+    record: Record,
+    graph: GraphDb,
+    **kwargs: Any,
+) -> tuple[Record, list[str]]:
+    """Resolve context path; on ``LlmError``, fall back to slugified new nodes."""
+    try:
+        return resolve_record_context_path(record, graph, **kwargs), []
+    except LlmError:
+        fallback_kwargs = dict(kwargs)
+        fallback_kwargs["fetch_resolution"] = None
+        fallback_kwargs.pop("ask_user", None)
+        resolved = resolve_context_path(record.context_path, graph, **fallback_kwargs)
+        warning = ENTITY_RESOLUTION_DEGRADE_WARNING
+        return replace(record, context_path=resolved), [warning]
 
 
 def resolve_context_path(

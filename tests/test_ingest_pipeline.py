@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import date
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -16,16 +16,26 @@ from yanka.graph import (
     upsert_context_path,
 )
 from yanka.graph.store import clear_graph_db_cache
+from yanka.ingest.conflict_candidates import ConflictCandidate
 from yanka.ingest.pipeline import run_ingest_pipeline
+from yanka.ui.pipeline_activity import IngestActivityStage
+from yanka.ingest.pipeline_stages import (
+    CONFLICT_EVALUATION_DEGRADE_WARNING,
+    ENTITY_RESOLUTION_DEGRADE_WARNING,
+    PipelineStage,
+)
+from yanka.llm.client import LlmTransportError
 from yanka.paths import ensure_data_layout, resolve_data_paths
 from yanka.records import iter_changelog, read_record
 from yanka.records.models import (
     Claim,
     ClaimStatus,
     Record,
+    RecordBody,
     RecordStatus,
     RecordType,
 )
+from yanka.retrieval_enums import RetrievalSource
 from yanka.vectors.indexing import index_claims, index_record
 from yanka.vectors.store import clear_vector_db_cache
 
@@ -158,6 +168,71 @@ def test_ingest_pipeline_happy_path(paths, graph) -> None:
     assert entries[0].action == "create"
 
 
+def test_ingest_pipeline_on_stage_order(paths, graph) -> None:
+    stages: list[str] = []
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+
+    run_ingest_pipeline(
+        "Dropping Redis for sessions",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
+        fetch_json=_mock_fetch(),
+        graph=graph,
+        filename="2026-05-14-on-stage.md",
+        embedding_config=embed_config,
+        on_stage=stages.append,
+    )
+
+    assert stages == [
+        IngestActivityStage.SEARCHING,
+        IngestActivityStage.EXTRACTING,
+        IngestActivityStage.VALIDATING,
+        IngestActivityStage.CONFLICT_CHECK,
+        IngestActivityStage.WRITING,
+    ]
+
+
+def test_ingest_pipeline_on_stage_resume_skips_extraction(paths, graph) -> None:
+    stages: list[str] = []
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+    record = Record(
+        date=date(2026, 5, 14),
+        type=RecordType.DECISION,
+        status=RecordStatus.ACTIVE,
+        context_path=["main-platform", "auth-service"],
+        decision="Drop Redis for session storage",
+        claims=[
+            Claim(
+                id="c1",
+                content="Session data is stored in PostgreSQL",
+                status=ClaimStatus.ACTIVE,
+            ),
+        ],
+        record_complete=True,
+        body=RecordBody(raw_input="resume note"),
+    )
+
+    run_ingest_pipeline(
+        "resume note",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
+        fetch_json=_mock_fetch(),
+        graph=graph,
+        filename="2026-05-14-on-stage-resume.md",
+        embedding_config=embed_config,
+        resume_stage=PipelineStage.ENTITY_RESOLUTION,
+        resume_record=record,
+        on_stage=stages.append,
+    )
+
+    assert stages == [
+        IngestActivityStage.CONFLICT_CHECK,
+        IngestActivityStage.WRITING,
+    ]
+
+
 def test_ingest_pipeline_with_confirmed_conflict(paths, graph) -> None:
     upsert_context_path(["main-platform", "auth-service"], graph)
     old = Record(
@@ -222,3 +297,107 @@ def test_ingest_pipeline_with_confirmed_conflict(paths, graph) -> None:
     assert entries[-1].supersedes_claims == [
         {"new": "c1", "old": "2026-03-02-jwt-auth.md:c2"},
     ]
+
+
+def test_ingest_pipeline_entity_resolution_llm_error_still_writes(paths, graph) -> None:
+    upsert_context_path(["main-platform"], graph)
+    upsert_context_path(["other-platform"], graph)
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+    acme_json = json.dumps(
+        {
+            **json.loads(COMPLETE_JSON),
+            "context_path": ["acme-platform", "auth-service"],
+        }
+    )
+
+    def failing_resolution(_messages):
+        raise LlmTransportError("connection reset")
+
+    result = run_ingest_pipeline(
+        "Dropping Redis for sessions",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: acme_json,
+        fetch_json=_mock_fetch(),
+        fetch_resolution=failing_resolution,
+        graph=graph,
+        filename="2026-05-14-degraded-entity.md",
+        embedding_config=embed_config,
+    )
+
+    assert result.write_result.path.is_file()
+    assert ENTITY_RESOLUTION_DEGRADE_WARNING in result.warnings
+
+
+def test_ingest_pipeline_conflict_evaluation_llm_error_still_writes(
+    paths,
+    graph,
+) -> None:
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+    candidate = ConflictCandidate(
+        claim_id="records/old.md:c2",
+        content="Token lifetime is 15 minutes",
+        source_file="records/old.md",
+        status="active",
+        source=RetrievalSource.GRAPH,
+    )
+
+    def fetch(_messages, expect=None, **_kwargs):
+        if expect == "array":
+            return CLAIMS
+        raise LlmTransportError("provider down")
+
+    with patch(
+        "yanka.ingest.pipeline.find_conflict_candidates",
+        return_value=[candidate],
+    ):
+        result = run_ingest_pipeline(
+            "Dropping Redis for sessions",
+            paths,
+            prompt_user=MagicMock(),
+            send=lambda _messages, **_kwargs: COMPLETE_JSON,
+            fetch_json=fetch,
+            graph=graph,
+            filename="2026-05-14-degraded-conflict.md",
+            embedding_config=embed_config,
+        )
+
+    assert result.write_result.path.is_file()
+    assert result.confirmed_conflicts == []
+    assert CONFLICT_EVALUATION_DEGRADE_WARNING in result.warnings
+
+
+def test_ingest_pipeline_resumes_from_entity_stage(paths, graph) -> None:
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+    record = Record(
+        date=date(2026, 5, 14),
+        type=RecordType.DECISION,
+        status=RecordStatus.ACTIVE,
+        context_path=["main-platform", "auth-service"],
+        decision="Drop Redis for session storage",
+        claims=[
+            Claim(
+                id="c1",
+                content="Session data is stored in PostgreSQL",
+                status=ClaimStatus.ACTIVE,
+            ),
+        ],
+        record_complete=True,
+        body=RecordBody(raw_input="resume note"),
+    )
+
+    result = run_ingest_pipeline(
+        "resume note",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
+        fetch_json=_mock_fetch(),
+        graph=graph,
+        filename="2026-05-14-resume-entity.md",
+        embedding_config=embed_config,
+        resume_stage=PipelineStage.ENTITY_RESOLUTION,
+        resume_record=record,
+    )
+
+    assert result.write_result.path.is_file()
+    assert len(result.record.claims) == 1

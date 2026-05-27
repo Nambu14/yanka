@@ -54,7 +54,8 @@ from yanka.ingest.extraction import (
     run_record_extraction_loop,
     run_record_extraction_loop_detailed,
 )
-from yanka.ingest.pipeline import IngestResult, run_ingest_pipeline
+from yanka.ingest.pipeline import IngestAbortError, IngestResult, run_ingest_pipeline
+from yanka.ingest.pipeline_stages import PipelineStage
 from yanka.ingest.write import WriteResult, write_ingested_record
 
 __all__ = [
@@ -68,7 +69,9 @@ __all__ = [
     "DetectedConflict",
     "EntityResolutionError",
     "FINAL_CLARIFYING_ROUND_NUDGE",
+    "IngestAbortError",
     "IngestResult",
+    "PipelineStage",
     "RecordExtractionError",
     "RecordExtractionResult",
     "WRAP_UP_USER_MESSAGE",

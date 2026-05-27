@@ -22,6 +22,7 @@ from yanka.llm.prompts import PromptName, format_extraction_record_return
 from yanka.paths import DataPaths, resolve_data_paths
 from yanka.records.json_schema import record_from_json, record_json_schema
 from yanka.records.models import Record
+from yanka.ui.pipeline_activity import IngestActivityStage, IngestOnStage
 
 WRAP_UP_USER_MESSAGE = """\
 CONVERSATION ENDED — no further user replies.
@@ -65,10 +66,13 @@ def build_record_extraction_conversation(
     paths: DataPaths | None = None,
     *,
     embedding_config: EmbeddingConfig | None = None,
+    on_stage: IngestOnStage | None = None,
 ) -> list[dict[str, str]]:
     """Build the initial message list (system + context + user dump)."""
     resolved = paths if paths is not None else resolve_data_paths()
     embed_config = _resolve_embedding_config(resolved, embedding_config)
+    if on_stage is not None:
+        on_stage(IngestActivityStage.SEARCHING)
     related = search_related_records(raw_dump, resolved, config=embed_config)
     context_block = format_related_records_for_prompt(related)
     return [
@@ -103,12 +107,19 @@ def run_record_extraction_loop_detailed(
     prompt_user: Callable[[str], str],
     send: Callable[..., str] | None = None,
     config: LlmConfig | None = None,
+    on_stage: IngestOnStage | None = None,
 ) -> RecordExtractionResult:
     """Run extraction and return the record plus conversation state."""
     resolved = paths if paths is not None else resolve_data_paths()
     llm_config = _resolve_llm_config(resolved, config)
     sender = send if send is not None else send_messages
-    messages = build_record_extraction_conversation(raw_dump, resolved)
+    messages = build_record_extraction_conversation(
+        raw_dump,
+        resolved,
+        on_stage=on_stage,
+    )
+    if on_stage is not None:
+        on_stage(IngestActivityStage.EXTRACTING)
     return _continue_record_extraction(
         raw_dump,
         messages,
@@ -127,6 +138,7 @@ def run_record_extraction_resume_loop_detailed(
     prompt_user: Callable[[str], str],
     send: Callable[..., str] | None = None,
     config: LlmConfig | None = None,
+    on_stage: IngestOnStage | None = None,
 ) -> RecordExtractionResult:
     """Resume extraction from a previously saved message history."""
     resolved = paths if paths is not None else resolve_data_paths()
@@ -134,7 +146,13 @@ def run_record_extraction_resume_loop_detailed(
     sender = send if send is not None else send_messages
     history = [dict(item) for item in messages]
     if not history:
-        history = build_record_extraction_conversation(raw_dump, resolved)
+        history = build_record_extraction_conversation(
+            raw_dump,
+            resolved,
+            on_stage=on_stage,
+        )
+    if on_stage is not None:
+        on_stage(IngestActivityStage.EXTRACTING)
     return _continue_record_extraction(
         raw_dump,
         history,

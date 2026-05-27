@@ -10,6 +10,7 @@ from typing import Any
 from yanka.config import LlmConfig
 from yanka.ingest.claims import ClaimExtractionError, extract_claims
 from yanka.llm import JsonParseError, get_prompt
+from yanka.llm.client import LlmError
 from yanka.llm.json_parse import fetch_llm_json
 from yanka.llm.prompts import PromptName
 from yanka.paths import DataPaths
@@ -86,7 +87,7 @@ def extract_claims_validated(
 
     try:
         claims = extract_claims(record, paths=paths, config=config, fetch_json=fetch)
-    except ClaimExtractionError:
+    except (ClaimExtractionError, LlmError):
         return [], [AMBER_COVERAGE_WARNING]
 
     issues = validate_claims(record, claims)
@@ -97,7 +98,7 @@ def extract_claims_validated(
         messages = build_claim_extraction_retry_messages(record, issues)
         data = fetch(messages, expect="array", paths=paths, config=config)
         claims = claims_from_json(data)
-    except (ClaimExtractionError, JsonParseError, ValueError):
+    except (ClaimExtractionError, JsonParseError, ValueError, LlmError):
         warnings.append(AMBER_COVERAGE_WARNING)
         return claims, warnings
 
