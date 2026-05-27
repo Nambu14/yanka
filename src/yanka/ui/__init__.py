@@ -9,6 +9,14 @@ from yanka.ui.ingest_confirm import (
     confirmation_view_from_record,
     render_ingest_confirmation,
 )
+from yanka.ui.pipeline_activity import (
+    IngestActivityStage,
+    IngestOnStage,
+    RetrievalActivityStage,
+    RetrievalOnStage,
+    ingest_stage_label,
+    retrieval_stage_label,
+)
 from yanka.ui.retrieval_answer import render_retrieval_answer
 from yanka.ui.system import (
     print_clarifying_panel,
@@ -16,6 +24,7 @@ from yanka.ui.system import (
     print_status_panel,
     print_statusline,
     print_system,
+    print_welcome_panel,
     start_activity,
     yanka_badge,
 )
@@ -32,6 +41,13 @@ __all__ = [
     "print_hint",
     "print_status_panel",
     "print_system",
+    "print_welcome_panel",
+    "IngestActivityStage",
+    "IngestOnStage",
+    "RetrievalActivityStage",
+    "RetrievalOnStage",
+    "ingest_stage_label",
+    "retrieval_stage_label",
     "start_activity",
     "yanka_badge",
 ]

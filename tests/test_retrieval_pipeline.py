@@ -11,6 +11,7 @@ from yanka.graph.store import clear_graph_db_cache
 from yanka.paths import ensure_data_layout, resolve_data_paths
 from yanka.records.io import read_record
 from yanka.retrieval import NO_RETRIEVED_RECORDS_ANSWER, run_retrieval_pipeline
+from yanka.ui.pipeline_activity import RetrievalActivityStage
 from yanka.retrieval_enums import QueryType, RetrievalSource
 from yanka.vectors.indexing import index_record
 from yanka.vectors.store import clear_vector_db_cache
@@ -84,6 +85,7 @@ def test_run_retrieval_pipeline_mocked_e2e(tmp_path: Path) -> None:
         synthesis_calls.append(messages)
         return "Sessions are stored in PostgreSQL (source: with-claims.md)."
 
+    stages: list[str] = []
     result = run_retrieval_pipeline(
         "What's our current approach to session storage?",
         paths,
@@ -91,8 +93,15 @@ def test_run_retrieval_pipeline_mocked_e2e(tmp_path: Path) -> None:
         embedding_config=EmbeddingConfig(provider="test", model="fake"),
         fetch_json=fake_fetch_json,
         fetch_text=fake_fetch_text,
+        on_stage=stages.append,
     )
 
+    assert stages == [
+        RetrievalActivityStage.ANALYZING,
+        RetrievalActivityStage.GRAPH,
+        RetrievalActivityStage.VECTORS,
+        RetrievalActivityStage.SYNTHESIZING,
+    ]
     assert result.question == "What's our current approach to session storage?"
     assert result.analysis.query_type is QueryType.CURRENT_STATE
     assert query_calls

@@ -17,6 +17,7 @@ from yanka.retrieval.output import RetrievalAnswerView, format_retrieval_answer
 from yanka.retrieval.query_analysis import QueryAnalysis, analyze_query
 from yanka.retrieval.synthesis import synthesize_retrieval_answer
 from yanka.retrieval.vector_retrieve import VectorRetrievalHit, retrieve_from_vector
+from yanka.ui.pipeline_activity import RetrievalActivityStage, RetrievalOnStage
 
 FetchJson = Callable[..., Any]
 FetchText = Callable[..., str]
@@ -48,10 +49,16 @@ def run_retrieval_pipeline(
     vector_limit: int | None = None,
     merge_limit: int | None = None,
     today: date | None = None,
+    on_stage: RetrievalOnStage | None = None,
 ) -> RetrievalResult:
     """Run retrieval steps 1–5 with injectable mocked LLM hooks."""
     resolved = paths if paths is not None else resolve_data_paths()
 
+    def emit_stage(stage: RetrievalActivityStage) -> None:
+        if on_stage is not None:
+            on_stage(stage)
+
+    emit_stage(RetrievalActivityStage.ANALYZING)
     analysis = analyze_query(
         question,
         paths=resolved,
@@ -61,12 +68,14 @@ def run_retrieval_pipeline(
 
     graph_db = graph if graph is not None else get_graph_db(resolved)
     init_graph_schema(graph_db)
+    emit_stage(RetrievalActivityStage.GRAPH)
     graph_hits = retrieve_from_graph(
         analysis,
         graph_db,
         resolved,
         limit=graph_limit,
     )
+    emit_stage(RetrievalActivityStage.VECTORS)
     vector_hits = retrieve_from_vector(
         analysis,
         resolved,
@@ -79,6 +88,7 @@ def run_retrieval_pipeline(
         vector_hits,
         limit=merge_limit,
     )
+    emit_stage(RetrievalActivityStage.SYNTHESIZING)
     answer = synthesize_retrieval_answer(
         question,
         analysis,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -11,7 +10,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-OutputFn = Callable[[str], None]
+from yanka.paths import DataPaths
+from yanka.records.io import iter_records
+from yanka.ui.console_file import ConsoleFile, OutputFn
 
 
 def yanka_badge() -> Text:
@@ -56,6 +57,42 @@ def print_status_panel(output_fn: OutputFn, content: str) -> None:
     _render_panel(output_fn, panel)
 
 
+def print_welcome_panel(output_fn: OutputFn, paths: DataPaths) -> None:
+    """Render the REPL welcome panel (spec §11 first-run tone)."""
+    records = list(iter_records(paths))
+    lines = [
+        "Welcome to yanka.",
+        f"Data dir: {paths.data_dir}",
+    ]
+    if records:
+        lines.append(f"Records: {len(records)}")
+        projects = sorted(
+            {
+                record_file.record.context_path[0]
+                for record_file in records
+                if record_file.record.context_path
+            }
+        )
+        if projects:
+            preview = ", ".join(projects[:5])
+            if len(projects) > 5:
+                preview = f"{preview}, …"
+            lines.append(f"Projects: {preview}")
+    lines.extend(
+        [
+            "",
+            "Type /log to record something, /ask to query, /help for commands.",
+        ]
+    )
+    panel = Panel(
+        Text("\n".join(lines)),
+        title=_panel_title("Welcome"),
+        border_style="purple",
+        padding=(0, 1),
+    )
+    _render_panel(output_fn, panel)
+
+
 def _panel_title(label: str) -> Text:
     title = Text()
     title.append_text(yanka_badge())
@@ -73,7 +110,7 @@ def _render_text(output_fn: OutputFn, line: Text) -> None:
 
 
 def _console(output_fn: OutputFn) -> Console:
-    return Console(file=_ConsoleFile(output_fn), force_terminal=False, width=120)
+    return Console(file=ConsoleFile(output_fn), force_terminal=False, width=120)
 
 
 class Activity(Protocol):
@@ -116,20 +153,3 @@ class _FallbackActivity:
         return None
 
 
-class _ConsoleFile:
-    def __init__(self, output_fn: OutputFn) -> None:
-        self._output_fn = output_fn
-
-    def write(self, text: str) -> int:
-        if text:
-            for line in text.splitlines():
-                stripped = line.rstrip()
-                if stripped:
-                    self._output_fn(stripped)
-        return len(text)
-
-    def flush(self) -> None:
-        return None
-
-    def isatty(self) -> bool:
-        return False

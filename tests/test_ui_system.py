@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from yanka.paths import ensure_data_layout, resolve_data_paths
 from yanka.ui.system import (
     print_clarifying_panel,
     print_hint,
     print_status_panel,
     print_statusline,
     print_system,
+    print_welcome_panel,
     start_activity,
     yanka_badge,
 )
@@ -38,6 +40,20 @@ def test_print_panels_emit_content() -> None:
     assert "Question 1?" in joined
     assert "Status" in joined
     assert "Records: 3" in joined
+
+
+def test_print_welcome_panel_emits_content(tmp_path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    output: list[str] = []
+
+    print_welcome_panel(output.append, paths)
+
+    joined = "\n".join(output)
+    assert "Welcome" in joined
+    assert "Welcome to yanka." in joined
+    assert str(paths.data_dir) in joined
+    assert "/log" in joined
+    assert "/ask" in joined
 
 
 def test_statusline_and_activity_fallback_emit_text() -> None:
