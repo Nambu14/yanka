@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from whyline.records.models import RecordStatus
-from whyline.retrieval import extract_citations, format_retrieval_answer
-from whyline.retrieval.merge import MergedRetrievalHit, RetrievalConfidence
-from whyline.retrieval_enums import RetrievalSource
+from yanka.records.models import RecordStatus
+from yanka.retrieval import extract_citations, format_retrieval_answer
+from yanka.retrieval.merge import MergedRetrievalHit, RetrievalConfidence
+from yanka.retrieval_enums import RetrievalSource
 
 
 def _hit(

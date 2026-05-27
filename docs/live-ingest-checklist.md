@@ -7,7 +7,7 @@ cheap structured-output testing.
 ## Prerequisites
 
 - [ ] `pip install -e ".[dev]"` from the repo root
-- [ ] `~/.whyline/config.yaml` exists with:
+- [ ] `~/.yanka/config.yaml` exists with:
   ```yaml
   llm:
     provider: openai
@@ -16,14 +16,14 @@ cheap structured-output testing.
     provider: local
     model: sentence-transformers/all-MiniLM-L6-v2
   ```
-- [ ] OpenAI API key in Keychain: service `whyline`, account `openai` (see project README / setup)
-- [ ] Verify key: `python -c "from whyline.secrets import get_api_key; print('ok' if get_api_key('openai') else 'missing')"`
+- [ ] OpenAI API key in Keychain: service `yanka`, account `openai` (see project README / setup)
+- [ ] Verify key: `python -c "from yanka.secrets import get_api_key; print('ok' if get_api_key('openai') else 'missing')"`
 
 ## M3 — Happy path (required)
 
 1. Run:
    ```bash
-   whyline
+   yanka
    /log
    ```
 2. Paste a decision note, e.g.:
@@ -36,16 +36,16 @@ cheap structured-output testing.
 **Pass if:**
 
 - [ ] Green **Record saved** panel appears
-- [ ] New file under `~/.whyline/records/*.md` (or your `--data-dir`)
+- [ ] New file under `~/.yanka/records/*.md` (or your `--data-dir`)
 - [ ] Frontmatter includes `record_complete: true`, `context_path`, `decision`, and a `claims` list
 - [ ] Extraction used JSON internally; no malformed YAML/frontmatter warning appears
 - [ ] `changelog.jsonl` has a new line with `"action": "create"`
-- [ ] No traceback; index warnings (if any) mention `whyline rebuild`
+- [ ] No traceback; index warnings (if any) mention `yanka rebuild`
 
 Optional sanity:
 
 ```bash
-whyline rebuild
+yanka rebuild
 ```
 
 ## M4 — Conflict path (optional)
@@ -68,7 +68,7 @@ whyline rebuild
 |--------|-------------|
 | API key error | Re-run Keychain setup; check `llm.provider: openai` |
 | Invalid JSON record | Prefer `gpt-4o-mini`, Gemini 2.x Flash, or Claude Sonnet; avoid weak local models |
-| Index warning only | Record is still saved; run `whyline rebuild` |
+| Index warning only | Record is still saved; run `yanka rebuild` |
 | Hang / slow | Normal on first run (local embedding download) |
 
 ## Sign-off

@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from whyline.config import LlmConfig
-from whyline.llm import (
+from yanka.config import LlmConfig
+from yanka.llm import (
     JsonParseError,
     LlmError,
     fetch_llm_json,
@@ -71,7 +71,7 @@ def test_fetch_llm_json_retries_on_parse_failure() -> None:
         ]
     )
 
-    with patch("whyline.llm.json_parse.send_messages", mock_send):
+    with patch("yanka.llm.json_parse.send_messages", mock_send):
         data = fetch_llm_json(messages, expect="object", max_attempts=2)
 
     assert data == {"conflicts": []}
@@ -84,7 +84,7 @@ def test_fetch_llm_json_raises_after_exhausted_attempts() -> None:
     mock_send = MagicMock(return_value="still not json")
 
     with (
-        patch("whyline.llm.json_parse.send_messages", mock_send),
+        patch("yanka.llm.json_parse.send_messages", mock_send),
         pytest.raises(JsonParseError),
     ):
         fetch_llm_json(messages, max_attempts=2)
@@ -96,7 +96,7 @@ def test_fetch_llm_json_succeeds_on_first_attempt() -> None:
     messages = [{"role": "user", "content": "extract"}]
     mock_send = MagicMock(return_value=_fixture("bare-object.txt"))
 
-    with patch("whyline.llm.json_parse.send_messages", mock_send):
+    with patch("yanka.llm.json_parse.send_messages", mock_send):
         data = fetch_llm_json(messages, expect="object")
 
     assert data == {"conflicts": []}
@@ -121,6 +121,34 @@ def test_fetch_typed_json_uses_strict_schema_when_supported() -> None:
 
     assert data == {"name": "Rudy"}
     assert calls[0]["response_format"]["type"] == "json_schema"
+
+
+def test_fetch_typed_json_falls_back_on_non_llm_provider_exception() -> None:
+    calls = []
+
+    def fake_send(_messages, **kwargs):
+        calls.append(kwargs)
+        if kwargs["response_format"]["type"] == "json_schema":
+            raise RuntimeError(
+                "Invalid schema for response_format 'yanka_record': "
+                "Missing 'rationale'."
+            )
+        return '{"name": "Rudy"}'
+
+    data = fetch_typed_json(
+        [{"role": "user", "content": "extract"}],
+        schema_name="person",
+        schema={"type": "object", "properties": {"name": {"type": "string"}}},
+        validate=lambda payload: payload,
+        config=LlmConfig(provider="openai", model="gpt-4o-mini"),
+        send=fake_send,
+    )
+
+    assert data == {"name": "Rudy"}
+    assert [call["response_format"]["type"] for call in calls] == [
+        "json_schema",
+        "json_object",
+    ]
 
 
 def test_fetch_typed_json_falls_back_to_json_object_mode() -> None:

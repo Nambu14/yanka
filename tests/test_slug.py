@@ -1,13 +1,13 @@
 from datetime import date
 from pathlib import Path
 
-from whyline.records.models import (
+from yanka.records.models import (
     Record,
     RecordBody,
     RecordStatus,
     RecordType,
 )
-from whyline.records.slug import (
+from yanka.records.slug import (
     record_filename,
     slugify_decision,
     slugify_text,

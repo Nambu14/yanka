@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from whyline.llm import LlmError, PromptName, get_prompt
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.models import RecordStatus
-from whyline.retrieval import (
+from yanka.llm import LlmError, PromptName, get_prompt
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.models import RecordStatus
+from yanka.retrieval import (
     NO_RETRIEVED_RECORDS_ANSWER,
     MergedRetrievalHit,
     RetrievalConfidence,
@@ -18,8 +18,8 @@ from whyline.retrieval import (
     load_retrieved_records,
     synthesize_retrieval_answer,
 )
-from whyline.retrieval.query_analysis import QueryAnalysis, QueryFilters
-from whyline.retrieval_enums import QueryType, RetrievalSource
+from yanka.retrieval.query_analysis import QueryAnalysis, QueryFilters
+from yanka.retrieval_enums import QueryType, RetrievalSource
 
 FIXTURE = Path(__file__).parent / "fixtures" / "records" / "valid-decision.md"
 

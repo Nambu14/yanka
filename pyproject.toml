@@ -3,9 +3,9 @@ requires = ["hatchling>=1.0,<2"]
 build-backend = "hatchling.build"
 
 [project]
-name = "whyline"
+name = "yanka"
 version = "0.1.0"
-description = "Capture engineering decisions from conversation and retrieve them later."
+description = "Yet ANother Knowledge App — capture engineering decisions from conversation and retrieve them later."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -13,12 +13,13 @@ authors = [{ name = "Lucas" }]
 dependencies = [
     "click>=8.0,<9",
     "keyring>=25.0,<26",
+    "prompt_toolkit>=3.0,<4",
     "pyyaml>=6.0,<7",
     "rich>=13.0,<14",
 ]
 
 [project.scripts]
-whyline = "whyline.cli:main"
+yanka = "yanka.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -46,7 +47,7 @@ spike = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/whyline"]
+packages = ["src/yanka"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

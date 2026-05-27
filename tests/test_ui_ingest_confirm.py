@@ -5,9 +5,9 @@ from pathlib import Path
 
 from rich.console import Console
 
-from whyline.ingest.write import WriteResult
-from whyline.records.io import read_record
-from whyline.ui import confirmation_view_from_record, render_ingest_confirmation
+from yanka.ingest.write import WriteResult
+from yanka.records.io import read_record
+from yanka.ui import confirmation_view_from_record, render_ingest_confirmation
 
 FIXTURE = Path(__file__).parent / "fixtures" / "records" / "with-claims.md"
 
@@ -64,7 +64,7 @@ def test_render_shows_index_warning_from_write_result() -> None:
 
     output = _capture(view)
 
-    assert "whyline rebuild" in output
+    assert "yanka rebuild" in output
     assert "[vectors] embed failed" in output
 
 

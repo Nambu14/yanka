@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from whyline.records.frontmatter import (
+from yanka.records.frontmatter import (
     parse_frontmatter,
     parse_record_markdown,
     split_markdown,

@@ -10,7 +10,7 @@ import pytest
 
 
 def ollama_available(base_url: str = "http://127.0.0.1:11434") -> bool:
-    if os.environ.get("WHYLINE_RUN_SPIKES") != "1":
+    if os.environ.get("YANKA_RUN_SPIKES") != "1":
         return False
     try:
         with urllib.request.urlopen(f"{base_url}/api/tags", timeout=2) as resp:
@@ -38,5 +38,5 @@ def require_ollama_qwen() -> None:
     if not ollama_has_model("qwen3:8b"):
         pytest.skip(
             "Ollama with qwen3:8b not available; "
-            "set WHYLINE_RUN_SPIKES=1 and start Ollama"
+            "set YANKA_RUN_SPIKES=1 and start Ollama"
         )

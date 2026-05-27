@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from whyline.records.markdown import record_to_markdown
-from whyline.records.models import parse_record
+from yanka.records.markdown import record_to_markdown
+from yanka.records.models import parse_record
 
 FIXTURES = Path(__file__).parent / "fixtures" / "records"
 
@@ -24,6 +24,17 @@ def test_round_trip_valid_decision() -> None:
     assert restored.record_complete == original.record_complete
     assert restored.body.rationale == original.body.rationale
     assert restored.body.raw_input == original.body.raw_input
+    assert restored.body.clarifying_exchange == original.body.clarifying_exchange
+
+
+def test_round_trip_clarifying_exchange() -> None:
+    original = parse_record(_read("valid-decision.md"))
+    original.body.clarifying_exchange = (
+        "### Round 1\n\n**Assistant:**\nTimeline?\n\n**User:**\nOne sprint"
+    )
+    restored = parse_record(record_to_markdown(original))
+
+    assert restored.body.clarifying_exchange == original.body.clarifying_exchange
 
 
 def test_round_trip_with_claims() -> None:
@@ -45,7 +56,7 @@ def test_omits_empty_body_sections() -> None:
 
 
 def test_top_fence_only_body_may_contain_horizontal_rules() -> None:
-    from whyline.records.frontmatter import split_markdown
+    from yanka.records.frontmatter import split_markdown
 
     record = parse_record(_read("valid-decision.md"))
     record.body.raw_input = "> line with --- inside\n> ---"

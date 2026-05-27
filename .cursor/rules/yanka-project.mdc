@@ -1,0 +1,10 @@
+---
+description: Yanka — spec and implementation plan pointers
+alwaysApply: true
+---
+
+# Yanka project context
+
+- **Product behavior:** [`yanka-spec.md`](yanka-spec.md) is the source of truth for UX and data model.
+- **Build order:** [`IMPLEMENTATION.md`](IMPLEMENTATION.md) — one step ID at a time (e.g. `2.8`); full plan + completion report per global `incremental-workflow` rule.
+- **Plans should cite** the matching `IMPLEMENTATION.md` row (task, deliverable, verify column) and spec § when relevant.

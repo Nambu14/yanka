@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from whyline.ingest.conflict_candidates import ConflictCandidate
-from whyline.ingest.conflict_evaluation import (
+from yanka.ingest.conflict_candidates import ConflictCandidate
+from yanka.ingest.conflict_evaluation import (
     DetectedConflict,
     build_conflict_evaluation_messages,
     evaluate_conflicts,
 )
-from whyline.llm import JsonParseError
-from whyline.records.models import Claim, ClaimStatus
+from yanka.llm import JsonParseError
+from yanka.records.models import Claim, ClaimStatus
 
 
 def _candidate(claim_id: str = "records/old.md:c2") -> ConflictCandidate:

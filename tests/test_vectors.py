@@ -6,17 +6,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from whyline.embeddings import EMBEDDING_DIM
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.vectors.claims import get_claims_table, open_claims_table
-from whyline.vectors.records import get_records_table, open_records_table
-from whyline.vectors.schema import (
+from yanka.embeddings import EMBEDDING_DIM
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.vectors.claims import get_claims_table, open_claims_table
+from yanka.vectors.records import get_records_table, open_records_table
+from yanka.vectors.schema import (
     CLAIMS_TABLE,
     RECORDS_TABLE,
     claims_table_schema,
     records_table_schema,
 )
-from whyline.vectors.store import clear_vector_db_cache, get_vector_db
+from yanka.vectors.store import clear_vector_db_cache, get_vector_db
 
 lancedb = pytest.importorskip("lancedb")
 pyarrow = pytest.importorskip("pyarrow")

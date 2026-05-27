@@ -8,12 +8,12 @@ from pathlib import Path
 
 import click
 
-from whyline.config import load_config
-from whyline.ingest import run_ingest_pipeline
-from whyline.ingest.entity_resolution import make_fetch_resolution
-from whyline.ingest.extraction import RecordExtractionError
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.ui.conflict_confirm import default_conflict_prompt
+from yanka.config import load_config
+from yanka.ingest import run_ingest_pipeline
+from yanka.ingest.entity_resolution import make_fetch_resolution
+from yanka.ingest.extraction import RecordExtractionError
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.ui.conflict_confirm import default_conflict_prompt
 
 
 def _read_dump(argument: str | None) -> str:
@@ -55,7 +55,7 @@ def _ask_user(question: str) -> str:
     "--data-dir",
     type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
     default=None,
-    help="Data directory (default: ~/.whyline).",
+    help="Data directory (default: ~/.yanka).",
 )
 def main(dump: str | None, data_dir: Path | None) -> None:
     """Run a full ingest session with real LLM calls."""

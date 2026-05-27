@@ -6,15 +6,15 @@ from unittest.mock import patch
 
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, EmbeddingError, register_embedding_backend
-from whyline.graph.store import clear_graph_db_cache
-from whyline.ingest.write import write_ingested_record
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.changelog import iter_changelog
-from whyline.records.io import read_record
-from whyline.vectors.records import get_records_table
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, EmbeddingError, register_embedding_backend
+from yanka.graph.store import clear_graph_db_cache
+from yanka.ingest.write import write_ingested_record
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.changelog import iter_changelog
+from yanka.records.io import read_record
+from yanka.vectors.records import get_records_table
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("lancedb")
 pytest.importorskip("ladybug")
@@ -68,7 +68,7 @@ def test_write_ingested_record_leaves_file_when_vectors_fail(tmp_path: Path) -> 
     record = read_record(FIXTURE).record
 
     with patch(
-        "whyline.ingest.write.index_record",
+        "yanka.ingest.write.index_record",
         side_effect=EmbeddingError("embed failed"),
     ):
         result = write_ingested_record(
@@ -90,7 +90,7 @@ def test_write_ingested_record_leaves_file_when_graph_fails(tmp_path: Path) -> N
     record = read_record(FIXTURE).record
 
     with patch(
-        "whyline.ingest.write.index_record_graph",
+        "yanka.ingest.write.index_record_graph",
         side_effect=RuntimeError("graph down"),
     ):
         result = write_ingested_record(

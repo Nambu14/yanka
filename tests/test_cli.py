@@ -3,9 +3,9 @@ from pathlib import Path
 import click
 from click.testing import CliRunner
 
-from whyline.cli import CONTEXT_KEY, get_data_paths, main
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.io import read_record, write_record
+from yanka.cli import CONTEXT_KEY, get_data_paths, main
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.io import read_record, write_record
 
 
 def test_version() -> None:
@@ -29,8 +29,8 @@ def test_data_dir_option_with_version(tmp_path: Path) -> None:
 
 
 def test_rebuild_command(tmp_path: Path) -> None:
-    from whyline.config import EmbeddingConfig, default_config, save_config
-    from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
+    from yanka.config import EmbeddingConfig, default_config, save_config
+    from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
 
     def fake_embed(texts: list[str], _config: EmbeddingConfig) -> list[list[float]]:
         return [[1.0] + [0.0] * (EMBEDDING_DIM - 1) for _ in texts]
@@ -52,7 +52,7 @@ def test_rebuild_command(tmp_path: Path) -> None:
 
 
 def test_no_subcommand_enters_repl(tmp_path: Path, monkeypatch) -> None:
-    from whyline.config import default_config, save_config
+    from yanka.config import default_config, save_config
 
     paths = ensure_data_layout(resolve_data_paths(tmp_path))
     save_config(paths, default_config(paths.data_dir))
@@ -61,7 +61,7 @@ def test_no_subcommand_enters_repl(tmp_path: Path, monkeypatch) -> None:
     def fake_repl(repl_paths):
         called.append(repl_paths)
 
-    monkeypatch.setattr("whyline.cli.run_repl", fake_repl)
+    monkeypatch.setattr("yanka.cli.run_repl", fake_repl)
 
     result = CliRunner().invoke(main, ["--data-dir", str(tmp_path)])
 

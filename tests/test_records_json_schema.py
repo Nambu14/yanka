@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from whyline.records.json_schema import RecordJsonError, record_from_json
+from yanka.records.json_schema import (
+    BODY_FIELDS,
+    RecordJsonError,
+    record_from_json,
+    record_json_schema,
+)
 
 VALID_RECORD_JSON = {
     "date": "2026-05-26",
@@ -16,6 +21,13 @@ VALID_RECORD_JSON = {
         "ownership": "[not discussed]",
     },
 }
+
+
+def test_strict_record_json_schema_lists_all_body_fields_as_required() -> None:
+    schema = record_json_schema(strict=True)
+    body = schema["properties"]["body"]
+
+    assert set(body["required"]) == set(BODY_FIELDS)
 
 
 def test_record_from_json_builds_record() -> None:

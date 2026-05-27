@@ -2,10 +2,10 @@ import json
 from datetime import date
 from pathlib import Path
 
-from whyline.paths import resolve_data_paths
-from whyline.records.changelog import iter_changelog
-from whyline.records.io import write_record
-from whyline.records.models import (
+from yanka.paths import resolve_data_paths
+from yanka.records.changelog import iter_changelog
+from yanka.records.io import write_record
+from yanka.records.models import (
     Claim,
     ClaimStatus,
     ClaimSupersedes,

@@ -15,10 +15,10 @@ pip install -e ".[dev,spike]"
 pytest
 
 # Spikes only (explicit path; `spikes` is in pytest norecursedirs)
-WHYLINE_RUN_SPIKES=1 pytest tests/spikes -v
+YANKA_RUN_SPIKES=1 pytest tests/spikes -v
 ```
 
-Set `WHYLINE_RUN_SPIKES=1` to enable live Ollama checks in S.3. Without it, import-only tests still run; the live completion is skipped.
+Set `YANKA_RUN_SPIKES=1` to enable live Ollama checks in S.3. Without it, import-only tests still run; the live completion is skipped.
 
 ## Findings (for Phase 2–3)
 

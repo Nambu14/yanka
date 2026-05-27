@@ -9,10 +9,10 @@ from pathlib import Path
 import click
 from rich.console import Console
 
-from whyline.config import load_config
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.retrieval import run_retrieval_pipeline
-from whyline.ui import render_retrieval_answer
+from yanka.config import load_config
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.retrieval import run_retrieval_pipeline
+from yanka.ui import render_retrieval_answer
 
 
 def _read_question(argument: str | None) -> str:
@@ -31,7 +31,7 @@ def _read_question(argument: str | None) -> str:
     "--data-dir",
     type=click.Path(path_type=Path, file_okay=False, dir_okay=True),
     default=None,
-    help="Data directory (default: ~/.whyline).",
+    help="Data directory (default: ~/.yanka).",
 )
 def main(question: str | None, data_dir: Path | None) -> None:
     """Run one retrieval query with real LLM calls."""

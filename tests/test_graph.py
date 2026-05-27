@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from whyline.graph.store import GraphStoreError, clear_graph_db_cache, get_graph_db
-from whyline.paths import ensure_data_layout, resolve_data_paths
+from yanka.graph.store import GraphStoreError, clear_graph_db_cache, get_graph_db
+from yanka.paths import ensure_data_layout, resolve_data_paths
 
 ladybug = pytest.importorskip("ladybug")
 
@@ -81,7 +81,7 @@ def test_graph_store_error_when_ladybug_missing(
     monkeypatch.setattr(builtins, "__import__", fail_import)
     clear_graph_db_cache()
 
-    missing_root = Path("/tmp/whyline-test-graph-missing")
+    missing_root = Path("/tmp/yanka-test-graph-missing")
     paths = ensure_data_layout(resolve_data_paths(missing_root))
     with pytest.raises(GraphStoreError, match=r"\[graph\]") as exc:
         get_graph_db(paths)

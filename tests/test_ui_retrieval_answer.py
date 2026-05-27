@@ -5,11 +5,11 @@ from io import StringIO
 
 from rich.console import Console
 
-from whyline.records.models import RecordStatus
-from whyline.retrieval import format_retrieval_answer
-from whyline.retrieval.merge import MergedRetrievalHit, RetrievalConfidence
-from whyline.retrieval_enums import RetrievalSource
-from whyline.ui import render_retrieval_answer
+from yanka.records.models import RecordStatus
+from yanka.retrieval import format_retrieval_answer
+from yanka.retrieval.merge import MergedRetrievalHit, RetrievalConfidence
+from yanka.retrieval_enums import RetrievalSource
+from yanka.ui import render_retrieval_answer
 
 
 def _capture(view) -> str:

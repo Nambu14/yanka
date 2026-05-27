@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from whyline.records.validate import (
+from yanka.records.validate import (
     REQUIRED_FRONTMATTER_KEYS,
     extract_complete_record_text,
     is_complete_record,

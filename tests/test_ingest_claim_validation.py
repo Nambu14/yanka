@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from whyline.ingest.claim_validation import (
+from yanka.ingest.claim_validation import (
     AMBER_COVERAGE_WARNING,
     ClaimValidationIssue,
     extract_claims_validated,
     validate_claims,
 )
-from whyline.ingest.claims import ClaimExtractionError
-from whyline.llm.json_parse import JsonParseError
-from whyline.records.models import (
+from yanka.ingest.claims import ClaimExtractionError
+from yanka.llm.json_parse import JsonParseError
+from yanka.records.models import (
     Claim,
     ClaimStatus,
     Record,

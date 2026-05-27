@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
-from whyline.graph import get_graph_db, index_record_graph, init_graph_schema
-from whyline.graph.store import clear_graph_db_cache
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.io import read_record
-from whyline.retrieval import NO_RETRIEVED_RECORDS_ANSWER, run_retrieval_pipeline
-from whyline.retrieval_enums import QueryType, RetrievalSource
-from whyline.vectors.indexing import index_record
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
+from yanka.graph import get_graph_db, index_record_graph, init_graph_schema
+from yanka.graph.store import clear_graph_db_cache
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.io import read_record
+from yanka.retrieval import NO_RETRIEVED_RECORDS_ANSWER, run_retrieval_pipeline
+from yanka.retrieval_enums import QueryType, RetrievalSource
+from yanka.vectors.indexing import index_record
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("ladybug")
 pytest.importorskip("lancedb")

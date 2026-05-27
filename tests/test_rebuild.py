@@ -5,17 +5,17 @@ from pathlib import Path
 
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
-from whyline.graph import get_graph_db, init_graph_schema
-from whyline.graph.store import clear_graph_db_cache
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.rebuild import rebuild_indexes, reset_indexes
-from whyline.records.io import write_record
-from whyline.records.models import RecordStatus
-from whyline.vectors.records import get_records_table
-from whyline.vectors.search import search_records
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
+from yanka.graph import get_graph_db, init_graph_schema
+from yanka.graph.store import clear_graph_db_cache
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.rebuild import rebuild_indexes, reset_indexes
+from yanka.records.io import write_record
+from yanka.records.models import RecordStatus
+from yanka.vectors.records import get_records_table
+from yanka.vectors.search import search_records
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("lancedb")
 pytest.importorskip("ladybug")
@@ -56,7 +56,7 @@ def _test_embed_backend() -> None:
 
 
 def _seed_records(paths) -> None:
-    from whyline.records.io import read_record
+    from yanka.records.io import read_record
 
     for fixture_name in ("with-claims.md", "valid-decision.md"):
         record = read_record(FIXTURES_DIR / fixture_name).record

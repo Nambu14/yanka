@@ -4,9 +4,9 @@ from io import StringIO
 
 from rich.console import Console
 
-from whyline.ingest.conflict_confirmation import ConflictPromptView
-from whyline.ingest.conflict_evaluation import DetectedConflict
-from whyline.ui.conflict_confirm import render_conflict_prompt
+from yanka.ingest.conflict_confirmation import ConflictPromptView
+from yanka.ingest.conflict_evaluation import DetectedConflict
+from yanka.ui.conflict_confirm import render_conflict_prompt
 
 
 def _capture(view: ConflictPromptView) -> str:

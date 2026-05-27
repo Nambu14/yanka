@@ -7,19 +7,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from whyline.ingest.extraction import (
+from yanka.ingest.extraction import (
     FINAL_CLARIFYING_ROUND_NUDGE,
     RecordExtractionError,
     build_record_extraction_conversation,
     run_record_extraction_loop,
     run_record_extraction_loop_detailed,
+    run_record_extraction_resume_loop_detailed,
 )
-from whyline.llm.prompts import (
+from yanka.llm.prompts import (
     PromptName,
     format_extraction_record_return,
     get_prompt,
 )
-from whyline.paths import resolve_data_paths
+from yanka.paths import resolve_data_paths
 
 FIXTURES = Path(__file__).parent / "fixtures" / "records"
 CLARIFYING = (FIXTURES / "clarifying-questions.md").read_text(encoding="utf-8")
@@ -49,7 +50,7 @@ def _record_json(**overrides) -> str:
 def test_build_record_extraction_conversation_includes_dump() -> None:
     messages = build_record_extraction_conversation(
         "We are dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-empty-test")),
+        resolve_data_paths(Path("/tmp/yanka-empty-test")),
     )
     assert messages[0]["role"] == "system"
     assert messages[1]["role"] == "user"
@@ -79,7 +80,7 @@ def test_extraction_loop_qa_then_json_record() -> None:
 
     record = run_record_extraction_loop(
         "Standardize sampling rates",
-        resolve_data_paths(Path("/tmp/whyline-extract-json-1")),
+        resolve_data_paths(Path("/tmp/yanka-extract-json-1")),
         prompt_user=prompt_user,
         send=fake_send,
     )
@@ -89,6 +90,12 @@ def test_extraction_loop_qa_then_json_record() -> None:
     assert record.status.value == "tentative"
     assert record.people == ["Rudy"]
     assert record.body.rationale is not None
+    assert record.body.raw_input == "Standardize sampling rates"
+    assert record.body.clarifying_exchange is not None
+    assert "**Assistant:**" in record.body.clarifying_exchange
+    assert "answer one" in record.body.clarifying_exchange
+    assert "answer two" in record.body.clarifying_exchange
+    assert FINAL_CLARIFYING_ROUND_NUDGE not in (record.body.clarifying_exchange or "")
     assert prompt_user.call_count == 2
     assert len(calls) == 3
 
@@ -104,7 +111,7 @@ def test_extraction_loop_two_clarifying_rounds_then_json_wrap_up() -> None:
 
     record = run_record_extraction_loop(
         "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-json-2")),
+        resolve_data_paths(Path("/tmp/yanka-extract-json-2")),
         prompt_user=MagicMock(side_effect=["answer one", "answer two"]),
         send=fake_send,
     )
@@ -132,7 +139,7 @@ def test_extraction_loop_retries_invalid_json_then_succeeds() -> None:
 
     record = run_record_extraction_loop(
         "Standardize frequency handling",
-        resolve_data_paths(Path("/tmp/whyline-extract-json-retry")),
+        resolve_data_paths(Path("/tmp/yanka-extract-json-retry")),
         prompt_user=lambda _q: "details",
         send=fake_send,
     )
@@ -153,7 +160,7 @@ def test_extraction_loop_raises_after_failed_json_finalization() -> None:
     with pytest.raises(RecordExtractionError, match="wrap-up"):
         run_record_extraction_loop(
             "Dropping Redis",
-            resolve_data_paths(Path("/tmp/whyline-extract-json-fail")),
+            resolve_data_paths(Path("/tmp/yanka-extract-json-fail")),
             prompt_user=lambda _q: "answers",
             send=always_invalid,
         )
@@ -162,10 +169,37 @@ def test_extraction_loop_raises_after_failed_json_finalization() -> None:
 def test_extraction_loop_detailed_returns_messages() -> None:
     result = run_record_extraction_loop_detailed(
         "Dropping Redis",
-        resolve_data_paths(Path("/tmp/whyline-extract-json-detailed")),
+        resolve_data_paths(Path("/tmp/yanka-extract-json-detailed")),
         prompt_user=lambda _q: "ok",
         send=lambda _messages, **_kwargs: _record_json(),
     )
 
     assert result.clarifying_rounds == 0
     assert len(result.messages) >= 3
+    assert result.record.body.raw_input == "Dropping Redis"
+    assert result.record.body.clarifying_exchange is None
+
+
+def test_resume_extraction_continues_from_saved_messages() -> None:
+    seeded = [
+        {"role": "system", "content": get_prompt(PromptName.RECORD_EXTRACTION)},
+        {"role": "user", "content": "User dump:\nDropping Redis"},
+        {"role": "assistant", "content": CLARIFYING},
+        {"role": "user", "content": "answer one"},
+    ]
+    calls: list[list[dict[str, str]]] = []
+
+    def fake_send(messages, **_kwargs):
+        calls.append(list(messages))
+        return _record_json()
+
+    result = run_record_extraction_resume_loop_detailed(
+        "Dropping Redis",
+        seeded,
+        resolve_data_paths(Path("/tmp/yanka-extract-json-resume")),
+        prompt_user=lambda _q: "answer two",
+        send=fake_send,
+    )
+
+    assert result.record.record_complete is True
+    assert calls

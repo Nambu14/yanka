@@ -4,16 +4,16 @@ from datetime import date
 
 import pytest
 
-from whyline.records.models import RecordStatus
-from whyline.retrieval.graph_retrieve import GraphRetrievalHit
-from whyline.retrieval.merge import (
+from yanka.records.models import RecordStatus
+from yanka.retrieval.graph_retrieve import GraphRetrievalHit
+from yanka.retrieval.merge import (
     MergedRetrievalHit,
     RetrievalConfidence,
     merge_retrieval_hits,
 )
-from whyline.retrieval.query_analysis import QueryAnalysis, QueryFilters
-from whyline.retrieval.vector_retrieve import VectorRetrievalHit
-from whyline.retrieval_enums import QueryType, RetrievalSource
+from yanka.retrieval.query_analysis import QueryAnalysis, QueryFilters
+from yanka.retrieval.vector_retrieve import VectorRetrievalHit
+from yanka.retrieval_enums import QueryType, RetrievalSource
 
 
 def _analysis(query_type: QueryType = QueryType.CURRENT_STATE) -> QueryAnalysis:

@@ -5,9 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from whyline.config import LlmConfig
-from whyline.llm import LlmError, send_messages
-from whyline.paths import ensure_data_layout, resolve_data_paths
+from yanka.config import LlmConfig
+from yanka.llm import LlmError, send_messages
+from yanka.paths import ensure_data_layout, resolve_data_paths
 
 
 def _fake_response(text: str = "assistant reply") -> SimpleNamespace:
@@ -39,8 +39,8 @@ def test_send_messages_returns_assistant_text() -> None:
     mock_completion = MagicMock(return_value=_fake_response("ok"))
 
     with (
-        patch("whyline.llm.client.get_api_key", return_value="sk-test"),
-        patch("whyline.llm.client._call_litellm", mock_completion),
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._call_litellm", mock_completion),
     ):
         result = send_messages(messages, config=config)
 
@@ -50,6 +50,7 @@ def test_send_messages_returns_assistant_text() -> None:
     assert call_kwargs["model"] == "anthropic/claude-sonnet-4-20250514"
     assert call_kwargs["messages"] == messages
     assert call_kwargs["api_key"] == "sk-test"
+    assert call_kwargs["timeout"] == 45
 
 
 def test_send_messages_passes_response_format() -> None:
@@ -59,8 +60,8 @@ def test_send_messages_passes_response_format() -> None:
     mock_completion = MagicMock(return_value=_fake_response('{"ok": true}'))
 
     with (
-        patch("whyline.llm.client.get_api_key", return_value="sk-test"),
-        patch("whyline.llm.client._call_litellm", mock_completion),
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._call_litellm", mock_completion),
     ):
         result = send_messages(
             messages,
@@ -77,8 +78,8 @@ def test_send_messages_returns_tool_arguments_when_content_empty() -> None:
     mock_completion = MagicMock(return_value=_fake_tool_response('{"ok": true}'))
 
     with (
-        patch("whyline.llm.client.get_api_key", return_value="sk-test"),
-        patch("whyline.llm.client._call_litellm", mock_completion),
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._call_litellm", mock_completion),
     ):
         result = send_messages([{"role": "user", "content": "Extract"}], config=config)
 
@@ -90,14 +91,15 @@ def test_send_messages_ollama_uses_api_base_without_api_key() -> None:
     mock_completion = MagicMock(return_value=_fake_response())
 
     with (
-        patch("whyline.llm.client.get_api_key") as mock_key,
-        patch("whyline.llm.client._call_litellm", mock_completion),
+        patch("yanka.llm.client.get_api_key") as mock_key,
+        patch("yanka.llm.client._call_litellm", mock_completion),
     ):
         send_messages([{"role": "user", "content": "hi"}], config=config)
 
     mock_key.assert_not_called()
     assert mock_completion.call_args.kwargs["model"] == "ollama/qwen3:8b"
     assert mock_completion.call_args.kwargs["api_base"] == "http://127.0.0.1:11434"
+    assert mock_completion.call_args.kwargs["timeout"] == 45
     assert "api_key" not in mock_completion.call_args.kwargs
 
 
@@ -105,8 +107,8 @@ def test_send_messages_missing_api_key_raises() -> None:
     config = LlmConfig(provider="openai", model="gpt-4o")
 
     with (
-        patch("whyline.llm.client.get_api_key", return_value=None),
-        patch("whyline.llm.client._call_litellm") as mock_completion,
+        patch("yanka.llm.client.get_api_key", return_value=None),
+        patch("yanka.llm.client._call_litellm") as mock_completion,
     ):
         with pytest.raises(LlmError, match="API key not configured"):
             send_messages([{"role": "user", "content": "hi"}], config=config)
@@ -121,7 +123,7 @@ def test_send_messages_empty_messages_raises() -> None:
 
 def test_send_messages_missing_litellm_raises() -> None:
     with patch(
-        "whyline.llm.client._call_litellm",
+        "yanka.llm.client._call_litellm",
         side_effect=LlmError('[llm] litellm is not installed'),
     ):
         with pytest.raises(LlmError, match=r"\[llm\] litellm is not installed"):
@@ -144,7 +146,7 @@ def test_call_litellm_missing_dependency() -> None:
 
     with patch.object(builtins, "__import__", fail_import):
         with pytest.raises(LlmError, match=r"\[llm\] litellm is not installed"):
-            from whyline.llm.client import _call_litellm
+            from yanka.llm.client import _call_litellm
 
             _call_litellm(model="ollama/qwen3:8b", messages=[])
 
@@ -158,8 +160,8 @@ def test_send_messages_loads_config_from_paths(tmp_path) -> None:
     mock_completion = MagicMock(return_value=_fake_response("loaded"))
 
     with (
-        patch("whyline.llm.client.get_api_key", return_value="sk-openai"),
-        patch("whyline.llm.client._call_litellm", mock_completion),
+        patch("yanka.llm.client.get_api_key", return_value="sk-openai"),
+        patch("yanka.llm.client._call_litellm", mock_completion),
     ):
         send_messages([{"role": "user", "content": "hi"}], paths=paths)
 

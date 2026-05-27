@@ -2,10 +2,10 @@
 name: "Implement approved step"
 description: "Implement only the step approved in the immediately preceding plan"
 category: Workflow
-tags: [whyline, implement, workflow, implementation]
+tags: [yanka, implement, workflow, implementation]
 ---
 
-Follow **incremental-workflow** and **whyline-project**.
+Follow **incremental-workflow** and **yanka-project**.
 
 ## Preconditions
 

@@ -5,17 +5,17 @@ from pathlib import Path
 
 import pytest
 
-from whyline.graph import get_graph_db, init_graph_schema, upsert_context_path
-from whyline.graph.aliases import append_context_alias, lookup_context_by_alias
-from whyline.graph.context import normalize_context_segment
-from whyline.graph.store import clear_graph_db_cache
-from whyline.ingest.entity_resolution import (
+from yanka.graph import get_graph_db, init_graph_schema, upsert_context_path
+from yanka.graph.aliases import append_context_alias, lookup_context_by_alias
+from yanka.graph.context import normalize_context_segment
+from yanka.graph.store import clear_graph_db_cache
+from yanka.ingest.entity_resolution import (
     lookup_context_by_normalized,
     resolve_context_path,
     resolve_record_context_path,
 )
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.models import Record, RecordBody, RecordStatus, RecordType
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.models import Record, RecordBody, RecordStatus, RecordType
 
 pytest.importorskip("ladybug")
 

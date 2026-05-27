@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from whyline import secrets
-from whyline.config import load_config
-from whyline.paths import DATA_DIR_ENV_VAR, resolve_data_paths
-from whyline.secrets import get_api_key
-from whyline.setup import config_exists, run_first_run
+from yanka import secrets
+from yanka.config import load_config
+from yanka.paths import DATA_DIR_ENV_VAR, resolve_data_paths
+from yanka.secrets import get_api_key
+from yanka.setup import config_exists, run_first_run
 
 
 @pytest.fixture
@@ -59,6 +59,50 @@ def test_run_first_run_writes_config_and_key(
     assert raw["data_dir"] == str(tmp_path)
 
 
+def test_run_first_run_skips_api_key_prompt_when_keyring_has_key(
+    tmp_path: Path, monkeypatch, mock_keyring
+) -> None:
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
+    mock_keyring[("yanka", "openai")] = "sk-from-keyring"
+    bootstrap = resolve_data_paths()
+    prompts = iter([str(tmp_path), "2"])
+    prompt_calls: list[str] = []
+
+    def fake_prompt(text: str, **_kwargs):
+        prompt_calls.append(text)
+        return next(prompts)
+
+    paths, config = run_first_run(
+        bootstrap=bootstrap,
+        prompt_fn=fake_prompt,
+        echo_fn=lambda _msg: None,
+    )
+
+    assert config.llm.provider == "openai"
+    assert get_api_key("openai") == "sk-from-keyring"
+    assert not any("API key" in call for call in prompt_calls)
+    assert paths.config_path.is_file()
+
+
+def test_run_first_run_allows_empty_api_key_when_env_set(
+    tmp_path: Path, monkeypatch, mock_keyring
+) -> None:
+    monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-env")
+    bootstrap = resolve_data_paths()
+    prompts = iter([str(tmp_path), "2", ""])
+
+    paths, config = run_first_run(
+        bootstrap=bootstrap,
+        prompt_fn=lambda *_a, **_k: next(prompts),
+        echo_fn=lambda _msg: None,
+    )
+
+    assert config.llm.provider == "openai"
+    assert get_api_key("openai") == "sk-env"
+    assert paths.config_path.is_file()
+
+
 def test_run_first_run_skips_api_key_for_ollama(
     tmp_path: Path, monkeypatch, mock_keyring
 ) -> None:
@@ -81,16 +125,16 @@ def test_cli_runs_first_setup_when_no_config(
 ) -> None:
     from click.testing import CliRunner
 
-    from whyline.cli import main
+    from yanka.cli import main
 
     monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
     prompts = iter([str(tmp_path), "2", "sk-openai"])
 
     monkeypatch.setattr(
-        "whyline.setup.click.prompt",
+        "yanka.setup.click.prompt",
         lambda *_a, **_k: next(prompts),
     )
-    monkeypatch.setattr("whyline.setup.click.echo", lambda _msg: None)
+    monkeypatch.setattr("yanka.setup.click.echo", lambda _msg: None)
 
     result = CliRunner().invoke(main, [])
 

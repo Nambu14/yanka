@@ -5,13 +5,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.io import read_record
-from whyline.vectors.indexing import index_record
-from whyline.vectors.records import get_records_table
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.io import read_record
+from yanka.vectors.indexing import index_record
+from yanka.vectors.records import get_records_table
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("lancedb")
 

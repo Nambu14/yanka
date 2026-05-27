@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from whyline.paths import (
+from yanka.paths import (
     DATA_DIR_ENV_VAR,
     DEFAULT_DATA_DIR,
     ensure_data_layout,
@@ -66,5 +66,5 @@ def test_tilde_expansion(tmp_path: Path, monkeypatch) -> None:
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    paths = resolve_data_paths("~/custom-whyline")
-    assert paths.data_dir == (home / "custom-whyline").resolve()
+    paths = resolve_data_paths("~/custom-yanka")
+    assert paths.data_dir == (home / "custom-yanka").resolve()

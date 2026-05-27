@@ -5,31 +5,31 @@ from pathlib import Path
 
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
-from whyline.graph import (
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
+from yanka.graph import (
     get_graph_db,
     index_record_graph,
     init_graph_schema,
 )
-from whyline.graph.store import clear_graph_db_cache
-from whyline.ingest.conflict_candidates import (
+from yanka.graph.store import clear_graph_db_cache
+from yanka.ingest.conflict_candidates import (
     ConflictCandidate,
     find_conflict_candidates,
     merge_conflict_candidates,
     vector_conflict_candidates,
 )
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.io import read_record
-from whyline.records.models import (
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.io import read_record
+from yanka.records.models import (
     Claim,
     ClaimStatus,
     Record,
     RecordStatus,
     RecordType,
 )
-from whyline.vectors.indexing import index_claims, index_record
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.vectors.indexing import index_claims, index_record
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("ladybug")
 pytest.importorskip("lancedb")

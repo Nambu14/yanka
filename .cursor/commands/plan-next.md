@@ -2,15 +2,15 @@
 name: "Plan next step"
 description: "Plan the next IMPLEMENTATION.md step only — no code until explicit approve"
 category: Workflow
-tags: [whyline, plan, workflow, implementation]
+tags: [yanka, plan, workflow, implementation]
 ---
 
-Follow the global **incremental-workflow** rule and **whyline-project** context.
+Follow the global **incremental-workflow** rule and **yanka-project** context.
 
 ## Your job this turn: PLAN ONLY
 
 1. Read `IMPLEMENTATION.md` and find the **next step without ✓** (or the step I name in `$ARGUMENTS` if provided).
-2. Read the matching rows in `whyline-spec.md` when relevant.
+2. Read the matching rows in `yanka-spec.md` when relevant.
 3. Post a **balanced plan** (not a one-liner, not a long essay):
    - Step ID + milestone
    - Problem (why now)

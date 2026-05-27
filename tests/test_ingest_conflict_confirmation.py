@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from whyline.ingest.conflict_candidates import ConflictCandidate
-from whyline.ingest.conflict_confirmation import (
+from yanka.ingest.conflict_candidates import ConflictCandidate
+from yanka.ingest.conflict_confirmation import (
     apply_confirmed_supersedes,
     confirm_detected_conflicts,
     parse_existing_claim_id,
 )
-from whyline.ingest.conflict_evaluation import DetectedConflict
-from whyline.records.models import Claim, ClaimStatus, ClaimSupersedes
+from yanka.ingest.conflict_evaluation import DetectedConflict
+from yanka.records.models import Claim, ClaimStatus, ClaimSupersedes
 
 
 def _detected() -> DetectedConflict:

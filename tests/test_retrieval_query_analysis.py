@@ -6,11 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from whyline.llm import PromptName, get_prompt
-from whyline.llm.json_parse import JsonParseError
-from whyline.retrieval import (
+from yanka.llm import PromptName, get_prompt
+from yanka.llm.json_parse import JsonParseError
+from yanka.retrieval import (
     EXPLORATORY_DEFAULT,
-    QueryAnalysis,
     QueryAnalysisError,
     QueryType,
     StatusFilter,

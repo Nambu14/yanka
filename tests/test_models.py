@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from whyline.records.frontmatter import parse_frontmatter
-from whyline.records.models import (
+from yanka.records.frontmatter import parse_frontmatter
+from yanka.records.models import (
     ClaimStatus,
     RecordStatus,
     RecordType,

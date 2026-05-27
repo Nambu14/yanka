@@ -7,27 +7,27 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from whyline.config import EmbeddingConfig
-from whyline.embeddings import EMBEDDING_DIM, register_embedding_backend
-from whyline.graph import (
+from yanka.config import EmbeddingConfig
+from yanka.embeddings import EMBEDDING_DIM, register_embedding_backend
+from yanka.graph import (
     get_graph_db,
     index_record_graph,
     init_graph_schema,
     upsert_context_path,
 )
-from whyline.graph.store import clear_graph_db_cache
-from whyline.ingest.pipeline import run_ingest_pipeline
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records import iter_changelog, read_record
-from whyline.records.models import (
+from yanka.graph.store import clear_graph_db_cache
+from yanka.ingest.pipeline import run_ingest_pipeline
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records import iter_changelog, read_record
+from yanka.records.models import (
     Claim,
     ClaimStatus,
     Record,
     RecordStatus,
     RecordType,
 )
-from whyline.vectors.indexing import index_claims, index_record
-from whyline.vectors.store import clear_vector_db_cache
+from yanka.vectors.indexing import index_claims, index_record
+from yanka.vectors.store import clear_vector_db_cache
 
 pytest.importorskip("ladybug")
 pytest.importorskip("lancedb")
@@ -150,6 +150,7 @@ def test_ingest_pipeline_happy_path(paths, graph) -> None:
 
     written = read_record(result.write_result.path)
     assert written.record.decision == "Drop Redis for session storage"
+    assert written.record.body.raw_input == "Dropping Redis for sessions"
     assert written.record.claims[0].content.startswith("Session data")
 
     entries = list(iter_changelog(paths))

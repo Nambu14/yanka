@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from whyline.llm import PromptName, UnknownPromptError, get_prompt, prompt_names
+from yanka.llm import PromptName, UnknownPromptError, get_prompt, prompt_names
 
 
 @pytest.mark.parametrize(

@@ -1,11 +1,11 @@
 # Live retrieval smoke (7.7b)
 
-Manual verification that `run_retrieval_pipeline` works with a **real LLM** and the local graph/vector indexes. There is no `/ask` REPL yet (Phase 8); use `scripts/live_ask.py` for a one-shot query.
+Manual verification that `run_retrieval_pipeline` works with a **real LLM** and the local graph/vector indexes. Use the REPL (`yanka` → `/ask <question>`) or `scripts/live_ask.py` for a one-shot query.
 
 ## Prerequisites
 
 - [ ] `pip install -e ".[dev]"` from the repo root
-- [ ] `~/.whyline/config.yaml` exists with a live LLM provider, for example:
+- [ ] `~/.yanka/config.yaml` exists with a live LLM provider, for example:
   ```yaml
   llm:
     provider: openai
@@ -14,20 +14,25 @@ Manual verification that `run_retrieval_pipeline` works with a **real LLM** and 
     provider: local
     model: sentence-transformers/all-MiniLM-L6-v2
   ```
-- [ ] API key is configured for the selected provider, for example Keychain service `whyline`, account `openai`
+- [ ] API key is configured for the selected provider, for example Keychain service `yanka`, account `openai`
 - [ ] Verify key:
   ```bash
-  python -c "from whyline.secrets import get_api_key; print('ok' if get_api_key('openai') else 'missing')"
+  python -c "from yanka.secrets import get_api_key; print('ok' if get_api_key('openai') else 'missing')"
   ```
-- [ ] At least one record exists under `~/.whyline/records/`
+- [ ] At least one record exists under `~/.yanka/records/`
 - [ ] If indexes may be stale, run:
   ```bash
-  whyline rebuild
+  yanka rebuild
   ```
 
 ## M5 — Retrieval happy path (required)
 
-1. Run:
+1. Run either:
+   ```bash
+   yanka
+   /ask What's our current approach to session storage?
+   ```
+   or:
    ```bash
    python scripts/live_ask.py "What's our current approach to session storage?"
    ```
@@ -35,7 +40,7 @@ Manual verification that `run_retrieval_pipeline` works with a **real LLM** and 
 
 **Pass if:**
 
-- [ ] Blue **whyline Answer** panel appears
+- [ ] Blue **yanka Answer** panel appears
 - [ ] Answer has at least one citation when the local KB has a relevant record
 - [ ] Source list includes file/status/date/context metadata
 - [ ] Hit counts print after the panel
@@ -60,7 +65,7 @@ python scripts/live_ask.py "What's our current approach to session storage?"
 | Symptom | What to try |
 |--------|-------------|
 | API key error | Re-run Keychain setup; check `llm.provider` |
-| No hits | Run `whyline rebuild`; check records under `~/.whyline/records/` |
+| No hits | Run `yanka rebuild`; check records under `~/.yanka/records/` |
 | Empty answer with hits | Capture Prompt 5 output and tune synthesis later |
 | Slow first run | Normal if local embedding model downloads |
 

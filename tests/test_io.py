@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from whyline.paths import resolve_data_paths
-from whyline.records.io import iter_records, read_record, write_record
-from whyline.records.models import (
+from yanka.paths import resolve_data_paths
+from yanka.records.io import iter_records, read_record, write_record
+from yanka.records.models import (
     Record,
     RecordBody,
     RecordStatus,

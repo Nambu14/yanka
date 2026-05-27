@@ -1,7 +1,7 @@
 import keyring.errors
 import pytest
 
-from whyline import secrets
+from yanka import secrets
 
 
 @pytest.fixture

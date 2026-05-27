@@ -6,15 +6,15 @@ from unittest.mock import patch
 
 import pytest
 
-from whyline.ingest.claims import (
+from yanka.ingest.claims import (
     ClaimExtractionError,
     build_claim_extraction_messages,
     extract_claims,
 )
-from whyline.llm import PromptName, get_prompt
-from whyline.llm.json_parse import JsonParseError
-from whyline.records.io import read_record
-from whyline.records.models import (
+from yanka.llm import PromptName, get_prompt
+from yanka.llm.json_parse import JsonParseError
+from yanka.records.io import read_record
+from yanka.records.models import (
     ClaimStatus,
     Record,
     RecordBody,
@@ -112,7 +112,7 @@ def test_extract_claims_uses_fetch_llm_json_by_default() -> None:
     record = _record_without_claims()
 
     with patch(
-        "whyline.ingest.claims.fetch_llm_json",
+        "yanka.ingest.claims.fetch_llm_json",
         return_value=MOCK_CLAIMS_JSON,
     ) as mock_fetch:
         claims = extract_claims(record)

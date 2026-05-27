@@ -1,6 +1,6 @@
-# Whyline — Implementation Plan
+# Yanka — Implementation Plan
 
-Step-by-step build plan for the CLI described in [`whyline-spec.md`](whyline-spec.md).
+Step-by-step build plan for the CLI described in [`yanka-spec.md`](yanka-spec.md).
 Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
 **Status:** Phases 0–6 complete. Next **Phase 7** (retrieval pipeline).
@@ -11,9 +11,9 @@ Each step is one PR-sized (or smaller) unit: implement → verify → move on.
 
 | ID | You can… |
 |----|----------|
-| **M0** | Run `whyline` and get a data dir + config |
+| **M0** | Run `yanka` and get a data dir + config |
 | **M1** | Write/read a record file + changelog |
-| **M2** | `whyline rebuild` rebuilds graph + vectors from files alone |
+| **M2** | `yanka rebuild` rebuilds graph + vectors from files alone |
 | **M3** | `/log` end-to-end without conflicts (happy path) |
 | **M4** | `/log` with conflict detection + supersession |
 | **M5** | `/ask` returns a cited answer |
@@ -25,7 +25,7 @@ Do not advance until every bullet passes.
 
 | Milestone | Exit criteria |
 |-----------|----------------|
-| **M0** | `pip install -e ".[dev]"` succeeds; `pytest` green; `whyline --version` works; fresh data dir has `records/`, `graph/`, `vectors/`; `config.yaml` load/save round-trips; API key read/write via keyring or env; first-run wizard writes config (manual smoke OK). |
+| **M0** | `pip install -e ".[dev]"` succeeds; `pytest` green; `yanka --version` works; fresh data dir has `records/`, `graph/`, `vectors/`; `config.yaml` load/save round-trips; API key read/write via keyring or env; first-run wizard writes config (manual smoke OK). |
 | **M1** | Fixture records parse and round-trip; `write_record` + `iter_records` + `append_changelog` tested; no LLM/DB required. |
 | **M2** | With only markdown files on disk, `rebuild` repopulates graph + vectors; vector search returns expected fixture; corrupting `vectors/` and rebuilding recovers. |
 | **M3** | `/log` (or `ingest_pipeline` in test) produces a valid markdown file + indexes; mocked LLM only; no conflict branch. |
@@ -48,7 +48,7 @@ CLI (REPL) ──► Config + keyring
      └── Retrieval pipeline ──► same stores + LLM
 ```
 
-**Invariant:** Markdown is written first. Graph and vectors are rebuilt from files via `whyline rebuild`.
+**Invariant:** Markdown is written first. Graph and vectors are rebuilt from files via `yanka rebuild`.
 
 ---
 
@@ -72,7 +72,7 @@ Validate imports/APIs in **Phase S** before building indexes on them. Ladybug: `
 ## Module layout (target)
 
 ```
-src/whyline/
+src/yanka/
   cli/           # entry, repl, commands
   config.py
   paths.py
@@ -93,16 +93,16 @@ src/whyline/
 
 | Step | Task | Deliverable | Verify | Status |
 |------|------|-------------|--------|--------|
-| 0.1 | Package layout | `pyproject.toml`, `src/whyline/` | `pip install -e .` | ✓ |
-| 0.2 | CLI entry (shell) | `whyline --help` | Console script works | ✓ |
+| 0.1 | Package layout | `pyproject.toml`, `src/yanka/` | `pip install -e .` | ✓ |
+| 0.2 | CLI entry (shell) | `yanka --help` | Console script works | ✓ |
 | 0.3 | Paths module | `data_dir`, `records/`, `graph/`, `vectors/`, paths | Unit test with `tmp_path` | ✓ |
-| 0.3b | Data dir override | `WHYLINE_DATA_DIR` env; `--data-dir` CLI flag | Tests/dev never touch real `~/.whyline` | ✓ |
+| 0.3b | Data dir override | `YANKA_DATA_DIR` env; `--data-dir` CLI flag | Tests/dev never touch real `~/.yanka` | ✓ |
 | 0.4 | Bootstrap data dir | `ensure_data_layout()` | Tree matches spec §2 | ✓ |
 | 0.5 | Config load/save | `load_config()`, `save_config()` | YAML round-trip | ✓ |
 | 0.6 | API key storage | keyring + env fallback | Mocked tests | ✓ |
-| 0.7 | First-run wizard | provider + key + data dir | Fresh `~/.whyline` works | ✓ |
+| 0.7 | First-run wizard | provider + key + data dir | Fresh `~/.yanka` works | ✓ |
 
-**Note:** User-facing `data_dir` (first-run choice) lands in **0.5** (config) + **0.7** (wizard). Resolution order will become: CLI `--data-dir` → `config.data_dir` → `WHYLINE_DATA_DIR` → `~/.whyline`.
+**Note:** User-facing `data_dir` (first-run choice) lands in **0.5** (config) + **0.7** (wizard). Resolution order will become: CLI `--data-dir` → `config.data_dir` → `YANKA_DATA_DIR` → `~/.yanka`.
 
 ---
 
@@ -118,13 +118,13 @@ Run once before Phase 2–3 implementation. Small scripts or tests under `tests/
 
 **Gate:** All three spikes pass before starting Phase 2.4+ / 3.2+.
 
-**Done:** `tests/spikes/` + optional dep group `spike`. Default `pytest` skips `tests/spikes/` via `norecursedirs`; run spikes with `pip install -e ".[spike]"` and `WHYLINE_RUN_SPIKES=1 pytest tests/spikes`.
+**Done:** `tests/spikes/` + optional dep group `spike`. Default `pytest` skips `tests/spikes/` via `norecursedirs`; run spikes with `pip install -e ".[spike]"` and `YANKA_RUN_SPIKES=1 pytest tests/spikes`.
 
 ---
 
 ## Phase 1 — Record model (filesystem only) → M1
 
-No LLM, no DBs. Use `WHYLINE_DATA_DIR` / `--data-dir` in all tests.
+No LLM, no DBs. Use `YANKA_DATA_DIR` / `--data-dir` in all tests.
 
 | Step | Task | Deliverable | Verify |
 |------|------|-------------|--------|
@@ -241,9 +241,20 @@ Build bottom-up: write path first, then conversation, then intelligence.
 | 8.3 | `/log` REPL command | Mocked ingest session | ✓ |
 | 8.3a-c | `/log` extraction hardening | No traceback; explicit format | ✓ |
 | 8.3d | JSON record extraction contract | LLM JSON → `Record` → Markdown | ✓ |
-| 8.4 | `/ask` | Answer from KB |
-| 8.5 | Rich UX polish | spec §11 checklist |
-| 8.6 | `/resume` | interrupt → resume |
+| 8.3e | Session transcript in record body | Python `Raw input` + `Clarifying exchange` | ✓ |
+| 8.4 | `/ask` | Answer from KB | ✓ |
+| 8.5a | Rich UX polish (visual patterns) | spec §11 checklist | ✓ |
+| 8.5b | REPL input engine (prompt_toolkit) | multiline paste, completion, history | ✓ |
+| 8.5c | Statusline + advanced UX affordances | persistent context and power flows | ✓ |
+| 8.6 | `/resume` | interrupt → resume | ✓ |
+
+---
+
+## Phase R — Rename (pre–Phase 9)
+
+| Step | Task | Verify |
+|------|------|--------|
+| R.0 | Rename `whyline` → `yanka` (package, CLI, paths, docs; no legacy migration) | `yanka --version`; `pytest -q`; `rg -i whyline` empty | ✓ |
 
 ---
 
@@ -263,8 +274,9 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 ## Deferred (not v1)
 
+- See `docs/future-improvements.md` for tracked post-v1 enhancements.
 - Cloud / multi-user
-- `whyline merge` for context nodes
+- `yanka merge` for context nodes
 - Correction flow (spec decision log #15)
 - Dedicated validation LLM call
 - Retrieval session memory

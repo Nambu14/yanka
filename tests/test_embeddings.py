@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from whyline.config import DEFAULT_EMBEDDING_MODEL, EmbeddingConfig
-from whyline.embeddings import (
+from yanka.config import DEFAULT_EMBEDDING_MODEL, EmbeddingConfig
+from yanka.embeddings import (
     EMBEDDING_DIM,
     EmbeddingDimensionError,
     EmbeddingError,
@@ -14,7 +14,7 @@ from whyline.embeddings import (
     reset_embedding_backends,
     unregister_embedding_backend,
 )
-from whyline.embeddings_fastembed import clear_fastembed_cache
+from yanka.embeddings_fastembed import clear_fastembed_cache
 
 
 def _fake_backend(texts: list[str], _config: EmbeddingConfig) -> list[list[float]]:

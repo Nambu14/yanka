@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-from whyline.graph import (
+from yanka.graph import (
     get_graph_db,
     index_record_graph,
     init_graph_schema,
     resolve_superseded_claim_id,
 )
-from whyline.graph.store import clear_graph_db_cache
-from whyline.paths import ensure_data_layout, resolve_data_paths
-from whyline.records.io import read_record
-from whyline.records.models import ClaimSupersedes
+from yanka.graph.store import clear_graph_db_cache
+from yanka.paths import ensure_data_layout, resolve_data_paths
+from yanka.records.io import read_record
+from yanka.records.models import ClaimSupersedes
 
 pytest.importorskip("ladybug")
 

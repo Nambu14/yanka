@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from whyline.graph import get_graph_db, init_graph_schema
-from whyline.graph.store import clear_graph_db_cache
-from whyline.paths import ensure_data_layout, resolve_data_paths
+from yanka.graph import get_graph_db, init_graph_schema
+from yanka.graph.store import clear_graph_db_cache
+from yanka.paths import ensure_data_layout, resolve_data_paths
 
 pytest.importorskip("ladybug")
 

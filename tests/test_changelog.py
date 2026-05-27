@@ -2,8 +2,8 @@ import json
 from datetime import date
 from pathlib import Path
 
-from whyline.paths import resolve_data_paths
-from whyline.records.changelog import (
+from yanka.paths import resolve_data_paths
+from yanka.records.changelog import (
     ChangelogEntry,
     append_changelog,
     content_hash,
@@ -11,8 +11,8 @@ from whyline.records.changelog import (
     iter_changelog,
     utc_timestamp,
 )
-from whyline.records.io import write_record
-from whyline.records.models import Record, RecordBody, RecordStatus, RecordType
+from yanka.records.io import write_record
+from yanka.records.models import Record, RecordBody, RecordStatus, RecordType
 
 
 def _record() -> Record:

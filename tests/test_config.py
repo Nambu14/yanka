@@ -3,14 +3,14 @@ from pathlib import Path
 import pytest
 import yaml
 
-from whyline.config import (
+from yanka.config import (
     DEFAULT_EMBEDDING_MODEL,
     DEFAULT_LLM_MODEL,
     default_config,
     load_config,
     save_config,
 )
-from whyline.paths import resolve_data_paths
+from yanka.paths import resolve_data_paths
 
 
 def test_default_config_values() -> None:
@@ -68,7 +68,7 @@ def test_resolve_data_paths_uses_config_data_dir(
     (bootstrap / "config.yaml").write_text(
         yaml.safe_dump({"data_dir": str(target)})
     )
-    monkeypatch.setenv("WHYLINE_DATA_DIR", str(bootstrap))
+    monkeypatch.setenv("YANKA_DATA_DIR", str(bootstrap))
 
     paths = resolve_data_paths()
 
