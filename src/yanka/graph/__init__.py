@@ -6,6 +6,7 @@ from yanka.graph.context import (
     upsert_context_path,
 )
 from yanka.graph.indexing import index_record_graph, resolve_superseded_claim_id
+from yanka.graph.inspect import PersonSummary, ProjectSummary, list_people, list_projects
 from yanka.graph.retrieve import GraphRetrieveFilters, retrieve_decisions_by_type
 from yanka.graph.schema import init_graph_schema
 from yanka.graph.store import (
@@ -27,6 +28,10 @@ __all__ = [
     "retrieve_decisions_by_type",
     "index_record_graph",
     "init_graph_schema",
+    "list_people",
+    "list_projects",
+    "PersonSummary",
+    "ProjectSummary",
     "resolve_superseded_claim_id",
     "normalize_context_segment",
     "upsert_context_path",

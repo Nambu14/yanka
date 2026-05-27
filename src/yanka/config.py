@@ -101,6 +101,34 @@ def _merge_dataclass[T](default: T, overrides: Any) -> T:
     return type(default)(**{f.name: values[f.name] for f in fields(default)})
 
 
+def format_config_display(paths: DataPaths) -> str:
+    """Format effective config for ``/config`` (no secret values)."""
+    from yanka.secrets import PROVIDER_ENV_VARS, get_api_key
+
+    has_file = paths.config_path.is_file()
+    config = load_config(paths) if has_file else default_config(paths.data_dir)
+    lines: list[str] = []
+    if has_file:
+        lines.append(f"Config file: {paths.config_path}")
+    else:
+        lines.append("Config file: (none — defaults)")
+
+    providers = sorted({config.llm.provider.lower(), *PROVIDER_ENV_VARS})
+    for provider in providers:
+        status = "set" if get_api_key(provider) else "not set"
+        lines.append(f"api_key ({provider}): {status}")
+
+    lines.append("")
+    lines.append(
+        yaml.safe_dump(
+            _config_to_dict(config),
+            sort_keys=False,
+            default_flow_style=False,
+        ).rstrip()
+    )
+    return "\n".join(lines)
+
+
 def _format_path_for_yaml(path: Path) -> str:
     home = Path.home()
     try:

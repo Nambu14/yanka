@@ -29,6 +29,7 @@ from yanka.repl import (
     run_resume_command,
 )
 from yanka.retrieval.output import RetrievalAnswerView
+from yanka.ui.pipeline_activity import IngestActivityStage, RetrievalActivityStage
 
 FIXTURE = Path(__file__).parent / "fixtures" / "records" / "valid-decision.md"
 
@@ -122,6 +123,49 @@ def test_repl_aliases_dispatch_help_history_and_quit(tmp_path: Path) -> None:
     assert HELP_TEXT in output
     history = "\n".join(output)
     assert "valid-decision.md" in history
+
+
+def test_repl_help_topic_log() -> None:
+    output = _run_with_inputs(["/help log", "/exit"])
+    joined = "\n".join(output)
+
+    assert "/log [text]" in joined
+    assert "ingest pipeline" in joined
+
+
+def test_repl_help_unknown_topic_lists_available() -> None:
+    output = _run_with_inputs(["/help bogus", "/exit"])
+    joined = "\n".join(output)
+
+    assert "Unknown help topic" in joined
+    assert "Topics:" in joined
+    assert "log" in joined
+
+
+def test_repl_inspection_commands_empty_graph(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    output = _run_with_paths(paths, ["/people", "/projects", "/exit"])
+    joined = "\n".join(output)
+
+    assert "No people in the graph yet" in joined
+    assert "No projects in the graph yet" in joined
+
+
+def test_repl_config_command(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from yanka.config import default_config, save_config
+
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    save_config(paths, default_config(paths.data_dir))
+
+    with patch("yanka.secrets.get_api_key", return_value=None):
+        output = _run_with_paths(paths, ["/config", "/exit"])
+
+    joined = "\n".join(output)
+    assert f"Config file: {paths.config_path}" in joined
+    assert "api_key (claude): not set" in joined
+    assert "provider: claude" in joined
 
 
 def test_repl_log_requires_confirmation_when_pending_exists(tmp_path: Path) -> None:
@@ -399,6 +443,13 @@ def test_log_command_calls_ingest_runner_and_reports_saved_path(tmp_path: Path) 
     saved_path = paths.records_dir / "logged.md"
 
     def fake_runner(raw_dump, runner_paths, **kwargs):
+        on_stage = kwargs.get("on_stage")
+        if on_stage is not None:
+            on_stage(IngestActivityStage.SEARCHING)
+            on_stage(IngestActivityStage.EXTRACTING)
+            on_stage(IngestActivityStage.VALIDATING)
+            on_stage(IngestActivityStage.CONFLICT_CHECK)
+            on_stage(IngestActivityStage.WRITING)
         calls.append((raw_dump, runner_paths, kwargs))
         return SimpleNamespace(write_result=SimpleNamespace(path=saved_path))
 
@@ -415,11 +466,13 @@ def test_log_command_calls_ingest_runner_and_reports_saved_path(tmp_path: Path) 
     assert "input_fn" in calls[0][2]
     assert "output_fn" in calls[0][2]
     assert "Running ingest pipeline..." in output
-    assert "· searching related records..." in output
+    assert "· searching for related records..." in output
     assert "· extracting claims..." in output
     assert "· checking for conflicts..." in output
+    assert "· writing record..." in output
+    assert "on_stage" in calls[0][2]
     assert f"Saved: {saved_path}" in output
-    assert "[a] /ask about this   [o] open file   [n] /log" in output
+    assert "[a] /ask about this" not in "\n".join(output)
 
 
 def test_repl_log_dispatch_uses_injected_runner(tmp_path: Path) -> None:
@@ -525,7 +578,13 @@ def test_ask_command_with_inline_question(tmp_path: Path) -> None:
     output: list[str] = []
     calls: list[str] = []
 
-    def fake_runner(question, runner_paths, **_kwargs):
+    def fake_runner(question, runner_paths, **kwargs):
+        on_stage = kwargs.get("on_stage")
+        if on_stage is not None:
+            on_stage(RetrievalActivityStage.ANALYZING)
+            on_stage(RetrievalActivityStage.GRAPH)
+            on_stage(RetrievalActivityStage.VECTORS)
+            on_stage(RetrievalActivityStage.SYNTHESIZING)
         calls.append(question)
         assert runner_paths == paths
         return SimpleNamespace(
@@ -631,14 +690,14 @@ def test_ask_command_no_records_skips_pipeline(tmp_path: Path) -> None:
 
 
 def test_ask_command_handles_llm_error(tmp_path: Path) -> None:
-    from yanka.llm.client import LlmError
+    from yanka.llm.client import LlmTransportError
 
     paths = ensure_data_layout(resolve_data_paths(tmp_path))
     _seed_record(paths)
     output: list[str] = []
 
     def failing_runner(*_args, **_kwargs):
-        raise LlmError("provider down")
+        raise LlmTransportError("litellm.InternalServerError: provider down")
 
     result = run_ask_command(
         paths,
@@ -649,7 +708,10 @@ def test_ask_command_handles_llm_error(tmp_path: Path) -> None:
 
     assert result is None
     assert "Could not answer this question." in output
-    assert "provider down" in output
+    joined = "\n".join(output).lower()
+    assert "could not reach the llm provider" in joined
+    assert "litellm" not in joined
+    assert "provider down" not in joined
 
 
 def test_repl_ask_dispatch_uses_injected_runner(tmp_path: Path) -> None:
