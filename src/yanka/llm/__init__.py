@@ -1,4 +1,11 @@
-from yanka.llm.client import LlmError, send_messages
+from yanka.llm.client import (
+    LlmAuthError,
+    LlmError,
+    LlmRateLimitError,
+    LlmTimeoutError,
+    LlmTransportError,
+    send_messages,
+)
 from yanka.llm.json_parse import (
     JsonParseError,
     JsonValidationError,
@@ -16,7 +23,11 @@ from yanka.llm.prompts import (
 __all__ = [
     "JsonParseError",
     "JsonValidationError",
+    "LlmAuthError",
     "LlmError",
+    "LlmRateLimitError",
+    "LlmTimeoutError",
+    "LlmTransportError",
     "PromptName",
     "UnknownPromptError",
     "fetch_llm_json",

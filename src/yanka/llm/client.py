@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from yanka.config import LlmConfig, load_config
@@ -11,6 +12,7 @@ from yanka.secrets import get_api_key
 
 DEFAULT_OLLAMA_BASE = "http://127.0.0.1:11434"
 DEFAULT_LLM_TIMEOUT_SECONDS = 45
+_LLM_SEND_MAX_ATTEMPTS = 2
 
 _PROVIDER_PREFIX = {
     "claude": "anthropic",
@@ -19,9 +21,31 @@ _PROVIDER_PREFIX = {
     "ollama": "ollama",
 }
 
+_litellm_module: Any | None = None
+_litellm_import_env_applied = False
+
 
 class LlmError(Exception):
     """LLM setup, configuration, or provider failures."""
+
+
+class LlmAuthError(LlmError):
+    """Authentication or missing API credentials."""
+
+
+class LlmRateLimitError(LlmError):
+    """Provider rate limit or quota exceeded."""
+
+
+class LlmTimeoutError(LlmError):
+    """Provider did not respond within the configured timeout."""
+
+
+class LlmTransportError(LlmError):
+    """Network or upstream availability failure (retryable)."""
+
+
+_RETRYABLE_ERRORS = (LlmTransportError, LlmRateLimitError, LlmTimeoutError)
 
 
 def send_messages(
@@ -43,8 +67,22 @@ def send_messages(
         messages,
         response_format=response_format,
     )
-    response = _call_litellm(**kwargs)
-    return _extract_assistant_text(response)
+
+    last_error: LlmError | None = None
+    for attempt in range(_LLM_SEND_MAX_ATTEMPTS):
+        try:
+            response = _call_litellm(**kwargs)
+            return _extract_assistant_text(response)
+        except _RETRYABLE_ERRORS as exc:
+            last_error = exc
+            if attempt + 1 < _LLM_SEND_MAX_ATTEMPTS:
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    msg = "LLM send failed without a classified error"
+    raise LlmError(msg)
 
 
 def _build_completion_kwargs(
@@ -72,7 +110,7 @@ def _build_completion_kwargs(
             f"API key not configured for LLM provider {provider!r}. "
             "Set via first-run wizard, keyring, or environment variables."
         )
-        raise LlmError(msg)
+        raise LlmAuthError(msg)
 
     kwargs["api_key"] = api_key
     if config.endpoint:
@@ -89,7 +127,22 @@ def _litellm_model(provider: str, model: str) -> str:
     return f"{prefix}/{model}"
 
 
-def _call_litellm(**kwargs: Any) -> Any:
+def _ensure_litellm_import_env() -> None:
+    """Apply env/logging defaults before the first ``import litellm``."""
+    global _litellm_import_env_applied
+    if _litellm_import_env_applied:
+        return
+    os.environ.setdefault("LITELLM_LOG", "ERROR")
+    logging.getLogger("LiteLLM").setLevel(logging.ERROR)
+    _litellm_import_env_applied = True
+
+
+def _get_litellm() -> Any:
+    global _litellm_module
+    if _litellm_module is not None:
+        return _litellm_module
+
+    _ensure_litellm_import_env()
     try:
         import litellm
     except ImportError as exc:
@@ -98,11 +151,80 @@ def _call_litellm(**kwargs: Any) -> Any:
             'Install with: pip install -e ".[llm]" or pip install -e ".[spike]"'
         )
         raise LlmError(msg) from exc
+
     _configure_litellm_runtime(litellm)
+    _litellm_module = litellm
+    return litellm
+
+
+def _call_litellm(**kwargs: Any) -> Any:
+    litellm = _get_litellm()
     try:
         return litellm.completion(**kwargs)
     except Exception as exc:
-        raise LlmError(str(exc)) from exc
+        raise _classify_litellm_exception(exc) from exc
+
+
+def _classify_litellm_exception(exc: Exception) -> LlmError:
+    litellm_exc = _litellm_exception_types()
+    if litellm_exc is not None:
+        auth_errors = (
+            litellm_exc.AuthenticationError,
+            litellm_exc.PermissionDeniedError,
+        )
+        if isinstance(exc, auth_errors):
+            return LlmAuthError(str(exc))
+
+        if isinstance(exc, litellm_exc.RateLimitError):
+            return LlmRateLimitError(str(exc))
+
+        if isinstance(exc, litellm_exc.Timeout):
+            return LlmTimeoutError(str(exc))
+
+        transport_errors = (
+            litellm_exc.APIConnectionError,
+            litellm_exc.InternalServerError,
+            litellm_exc.ServiceUnavailableError,
+            litellm_exc.BadGatewayError,
+        )
+        if isinstance(exc, transport_errors):
+            return LlmTransportError(str(exc))
+
+    return _classify_litellm_exception_heuristic(exc)
+
+
+def _litellm_exception_types() -> Any | None:
+    try:
+        from litellm import exceptions as litellm_exceptions
+    except ImportError:
+        return None
+    return litellm_exceptions
+
+
+def _classify_litellm_exception_heuristic(exc: Exception) -> LlmError:
+    message = str(exc).lower()
+    if "rate limit" in message or "rate_limit" in message or "429" in message:
+        return LlmRateLimitError(str(exc))
+    if "timeout" in message or "timed out" in message:
+        return LlmTimeoutError(str(exc))
+    if (
+        "api key" in message
+        or "authentication" in message
+        or "unauthorized" in message
+        or "401" in message
+        or "403" in message
+    ):
+        return LlmAuthError(str(exc))
+    if (
+        "connection" in message
+        or "connect" in message
+        or "503" in message
+        or "502" in message
+        or "500" in message
+        or "unavailable" in message
+    ):
+        return LlmTransportError(str(exc))
+    return LlmError(str(exc))
 
 
 def _configure_litellm_runtime(litellm: Any) -> None:

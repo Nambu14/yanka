@@ -1,13 +1,24 @@
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from yanka.config import LlmConfig
-from yanka.llm import LlmError, send_messages
+from yanka.llm import (
+    LlmAuthError,
+    LlmError,
+    LlmRateLimitError,
+    LlmTimeoutError,
+    LlmTransportError,
+    send_messages,
+)
+from yanka.llm import client as llm_client
 from yanka.paths import ensure_data_layout, resolve_data_paths
+
+litellm_exceptions = pytest.importorskip("litellm.exceptions")
 
 
 def _fake_response(text: str = "assistant reply") -> SimpleNamespace:
@@ -110,7 +121,7 @@ def test_send_messages_missing_api_key_raises() -> None:
         patch("yanka.llm.client.get_api_key", return_value=None),
         patch("yanka.llm.client._call_litellm") as mock_completion,
     ):
-        with pytest.raises(LlmError, match="API key not configured"):
+        with pytest.raises(LlmAuthError, match="API key not configured"):
             send_messages([{"role": "user", "content": "hi"}], config=config)
 
     mock_completion.assert_not_called()
@@ -166,3 +177,115 @@ def test_send_messages_loads_config_from_paths(tmp_path) -> None:
         send_messages([{"role": "user", "content": "hi"}], paths=paths)
 
     assert mock_completion.call_args.kwargs["model"] == "openai/gpt-4o"
+
+
+def _mock_litellm_module(*, side_effect: object) -> MagicMock:
+    mock_litellm = MagicMock()
+    mock_litellm.completion.side_effect = side_effect
+    return mock_litellm
+
+
+def _provider_exc(exc_type: type, message: str) -> Exception:
+    if exc_type is litellm_exceptions.Timeout:
+        return exc_type(message, "gpt-4o", "openai")
+    return exc_type(message, "openai", "gpt-4o")
+
+
+@pytest.mark.parametrize(
+    ("exc_type", "expected_type", "expected_calls"),
+    [
+        (litellm_exceptions.APIConnectionError, LlmTransportError, 2),
+        (litellm_exceptions.AuthenticationError, LlmAuthError, 1),
+        (litellm_exceptions.RateLimitError, LlmRateLimitError, 2),
+        (litellm_exceptions.Timeout, LlmTimeoutError, 2),
+        (litellm_exceptions.InternalServerError, LlmTransportError, 2),
+    ],
+)
+def test_send_messages_classifies_litellm_errors(
+    exc_type: type,
+    expected_type: type[LlmError],
+    expected_calls: int,
+) -> None:
+    config = LlmConfig(provider="openai", model="gpt-4o")
+    error = _provider_exc(exc_type, "provider failure")
+    mock_litellm = _mock_litellm_module(side_effect=error)
+
+    with (
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._get_litellm", return_value=mock_litellm),
+    ):
+        with pytest.raises(expected_type, match="provider failure"):
+            send_messages([{"role": "user", "content": "hi"}], config=config)
+
+    assert mock_litellm.completion.call_count == expected_calls
+
+
+def test_send_messages_retries_transient_error_once() -> None:
+    config = LlmConfig(provider="openai", model="gpt-4o")
+    transient = _provider_exc(
+        litellm_exceptions.APIConnectionError,
+        "connection reset",
+    )
+    mock_litellm = _mock_litellm_module(
+        side_effect=[transient, _fake_response("recovered")],
+    )
+
+    with (
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._get_litellm", return_value=mock_litellm),
+    ):
+        result = send_messages([{"role": "user", "content": "hi"}], config=config)
+
+    assert result == "recovered"
+    assert mock_litellm.completion.call_count == 2
+
+
+def test_send_messages_does_not_retry_auth_error() -> None:
+    config = LlmConfig(provider="openai", model="gpt-4o")
+    auth_error = _provider_exc(
+        litellm_exceptions.AuthenticationError,
+        "invalid api key",
+    )
+    mock_litellm = _mock_litellm_module(side_effect=auth_error)
+
+    with (
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._get_litellm", return_value=mock_litellm),
+    ):
+        with pytest.raises(LlmAuthError, match="invalid api key"):
+            send_messages([{"role": "user", "content": "hi"}], config=config)
+
+    mock_litellm.completion.assert_called_once()
+
+
+def test_send_messages_raises_after_second_transient_failure() -> None:
+    config = LlmConfig(provider="openai", model="gpt-4o")
+    transient = _provider_exc(
+        litellm_exceptions.ServiceUnavailableError,
+        "service unavailable",
+    )
+    mock_litellm = _mock_litellm_module(side_effect=[transient, transient])
+
+    with (
+        patch("yanka.llm.client.get_api_key", return_value="sk-test"),
+        patch("yanka.llm.client._get_litellm", return_value=mock_litellm),
+    ):
+        with pytest.raises(LlmTransportError, match="service unavailable"):
+            send_messages([{"role": "user", "content": "hi"}], config=config)
+
+    assert mock_litellm.completion.call_count == 2
+
+
+def test_ensure_litellm_import_env_sets_litellm_log() -> None:
+    original_applied = llm_client._litellm_import_env_applied
+    original_module = llm_client._litellm_module
+    try:
+        llm_client._litellm_import_env_applied = False
+        llm_client._litellm_module = None
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("LITELLM_LOG", None)
+            llm_client._ensure_litellm_import_env()
+            assert os.environ.get("LITELLM_LOG") == "ERROR"
+    finally:
+        llm_client._litellm_import_env_applied = original_applied
+        llm_client._litellm_module = original_module
