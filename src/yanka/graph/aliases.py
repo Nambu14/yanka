@@ -46,19 +46,22 @@ def list_context_candidates(
             "RETURN c.canonical_name, c.normalized_name, c.aliases "
             "ORDER BY c.canonical_name"
         )
+        rows = graph.connection.execute(query).get_all()
     else:
         if parent_canonical is None:
             return []
-        escaped_parent = _escape_cypher_string(parent_canonical)
         query = (
-            f"MATCH (parent:Context {{canonical_name: '{escaped_parent}'}})"
-            f"-[:contains]->(c:Context) "
-            f"WHERE c.depth = {depth} "
+            "MATCH (parent:Context {canonical_name: $parent})"
+            "-[:contains]->(c:Context) "
+            "WHERE c.depth = $depth "
             "RETURN c.canonical_name, c.normalized_name, c.aliases "
             "ORDER BY c.canonical_name"
         )
+        rows = graph.connection.execute(
+            query,
+            parameters={"parent": parent_canonical, "depth": depth},
+        ).get_all()
 
-    rows = graph.connection.execute(query).get_all()
     return [_row_to_candidate(row) for row in rows]
 
 
@@ -72,9 +75,9 @@ def append_context_alias(
     if not phrase:
         return
 
-    escaped = _escape_cypher_string(canonical_name)
     rows = graph.connection.execute(
-        f"MATCH (c:Context {{canonical_name: '{escaped}'}}) RETURN c.aliases"
+        "MATCH (c:Context {canonical_name: $canonical_name}) RETURN c.aliases",
+        parameters={"canonical_name": canonical_name},
     ).get_all()
     if not rows:
         msg = f"Context node not found: {canonical_name!r}"
@@ -85,10 +88,10 @@ def append_context_alias(
         return
 
     updated = existing + [phrase]
-    list_literal = _format_cypher_string_list(updated)
     graph.connection.execute(
-        f"MATCH (c:Context {{canonical_name: '{escaped}'}}) "
-        f"SET c.aliases = {list_literal}"
+        "MATCH (c:Context {canonical_name: $canonical_name}) "
+        "SET c.aliases = $aliases",
+        parameters={"canonical_name": canonical_name, "aliases": updated},
     )
 
 
@@ -124,14 +127,3 @@ def _alias_already_stored(aliases: list[str], phrase: str) -> bool:
         if new_keys & _alias_match_keys(existing):
             return True
     return False
-
-
-def _format_cypher_string_list(values: list[str]) -> str:
-    if not values:
-        return "[]"
-    parts = ", ".join(f"'{_escape_cypher_string(value)}'" for value in values)
-    return f"[{parts}]"
-
-
-def _escape_cypher_string(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("'", "''")

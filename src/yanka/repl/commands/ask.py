@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yanka.app_logging import get_logger, log_exception
 from yanka.llm.client import LlmError
 from yanka.paths import DataPaths
 from yanka.records.io import iter_records
@@ -11,6 +12,8 @@ from yanka.repl.errors import emit_user_error
 from yanka.repl.runners import display_retrieval_answer, run_live_ask
 from yanka.repl.types import AnswerDisplayFn, AskRunner, OutputFn, PromptFn
 from yanka.ui import RetrievalActivityStage, retrieval_stage_label, start_activity
+
+_LOGGER = get_logger(__name__)
 
 
 def run_ask_command(
@@ -53,11 +56,14 @@ def run_ask_command(
         result = runner(user_question, paths, on_stage=on_stage)
     except LlmError as exc:
         activity.stop()
+        log_exception(_LOGGER, "ask command failed", exc, command="ask")
         output("Could not answer this question.")
         emit_user_error(output, exc, command="ask")
         return None
 
     activity.stop()
     show_answer(result, output)
+    for warning in getattr(result, "warnings", ()):
+        output(f"Warning: {warning}")
     output("[/log to update]  [/ask <follow-up>]")
     return result

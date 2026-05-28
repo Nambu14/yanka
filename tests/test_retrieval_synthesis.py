@@ -16,7 +16,9 @@ from yanka.retrieval import (
     build_retrieval_synthesis_messages,
     format_retrieval_synthesis_input,
     load_retrieved_records,
+    load_retrieved_records_detailed,
     synthesize_retrieval_answer,
+    synthesize_retrieval_answer_detailed,
 )
 from yanka.retrieval.query_analysis import QueryAnalysis, QueryFilters
 from yanka.retrieval_enums import QueryType, RetrievalSource
@@ -63,14 +65,26 @@ def test_load_retrieved_records_loads_raw_markdown(tmp_path: Path) -> None:
     assert records[0].hit.file_reference == "records/valid-decision.md"
 
 
-def test_load_retrieved_records_missing_file_raises(tmp_path: Path) -> None:
+def test_load_retrieved_records_missing_file_skips(tmp_path: Path) -> None:
     paths = ensure_data_layout(resolve_data_paths(tmp_path))
 
-    with pytest.raises(RetrievalSynthesisError, match="missing on disk"):
-        load_retrieved_records([_hit("records/missing.md")], paths)
+    records = load_retrieved_records([_hit("records/missing.md")], paths)
+
+    assert records == []
 
 
-def test_format_retrieval_synthesis_input_matches_prompt_contract(tmp_path: Path) -> None:
+def test_load_retrieved_records_detailed_tracks_missing(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+
+    loaded = load_retrieved_records_detailed([_hit("records/missing.md")], paths)
+
+    assert loaded.records == []
+    assert loaded.missing_file_references == ["records/missing.md"]
+
+
+def test_format_retrieval_synthesis_input_matches_prompt_contract(
+    tmp_path: Path,
+) -> None:
     paths = ensure_data_layout(resolve_data_paths(tmp_path))
     _seed_record(paths)
     records = load_retrieved_records([_hit()], paths)
@@ -155,3 +169,44 @@ def test_synthesize_retrieval_answer_wraps_llm_error(tmp_path: Path) -> None:
             paths=paths,
             fetch_text=fail_fetch,
         )
+
+
+def test_synthesize_retrieval_answer_detailed_skips_missing_hits(
+    tmp_path: Path,
+) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    _seed_record(paths)
+
+    def fake_fetch(_messages: list[dict[str, str]], **_kwargs) -> str:
+        return "ok"
+
+    result = synthesize_retrieval_answer_detailed(
+        "What did we decide?",
+        _analysis(),
+        [_hit(), _hit("records/missing.md")],
+        paths=paths,
+        fetch_text=fake_fetch,
+    )
+
+    assert result.answer == "ok"
+    assert result.missing_file_references == ["records/missing.md"]
+
+
+def test_synthesize_retrieval_answer_detailed_all_missing_skips_llm(
+    tmp_path: Path,
+) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+
+    def fail_fetch(_messages: list[dict[str, str]], **_kwargs) -> str:
+        raise AssertionError("LLM should not be called when all hits are missing")
+
+    result = synthesize_retrieval_answer_detailed(
+        "What did we decide?",
+        _analysis(),
+        [_hit("records/missing.md")],
+        paths=paths,
+        fetch_text=fail_fetch,
+    )
+
+    assert result.answer == NO_RETRIEVED_RECORDS_ANSWER
+    assert result.missing_file_references == ["records/missing.md"]

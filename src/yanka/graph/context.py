@@ -59,25 +59,26 @@ def upsert_context_path(segments: list[str], graph: GraphDb) -> str:
     conn = graph.connection
 
     for level in levels:
-        canonical = _escape_cypher_string(level.canonical_name)
-        normalized = _escape_cypher_string(level.normalized_name)
         conn.execute(
-            f"MERGE (n:Context {{canonical_name: '{canonical}'}}) "
-            f"ON CREATE SET n.normalized_name = '{normalized}', "
-            f"n.depth = {level.depth}, n.aliases = []"
+            "MERGE (n:Context {canonical_name: $canonical}) "
+            "ON CREATE SET n.normalized_name = $normalized, "
+            "n.depth = $depth, n.aliases = []",
+            parameters={
+                "canonical": level.canonical_name,
+                "normalized": level.normalized_name,
+                "depth": level.depth,
+            },
         )
 
     for index in range(1, len(levels)):
-        parent = _escape_cypher_string(levels[index - 1].canonical_name)
-        child = _escape_cypher_string(levels[index].canonical_name)
         conn.execute(
-            f"MATCH (parent:Context {{canonical_name: '{parent}'}}), "
-            f"(child:Context {{canonical_name: '{child}'}}) "
-            f"MERGE (parent)-[:contains]->(child)"
+            "MATCH (parent:Context {canonical_name: $parent}), "
+            "(child:Context {canonical_name: $child}) "
+            "MERGE (parent)-[:contains]->(child)",
+            parameters={
+                "parent": levels[index - 1].canonical_name,
+                "child": levels[index].canonical_name,
+            },
         )
 
     return levels[-1].canonical_name
-
-
-def _escape_cypher_string(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("'", "''")

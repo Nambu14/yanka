@@ -51,7 +51,7 @@ def format_user_error(exc: BaseException, *, command: str) -> list[str]:
         )
     if isinstance(exc, LlmError):
         return _with_resume_hint(
-            ["The request to the LLM provider failed. Try again."],
+            ["The request to the LLM provider failed. See yanka.log and try again."],
             command=command,
         )
 

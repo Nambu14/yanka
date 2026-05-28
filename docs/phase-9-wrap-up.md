@@ -71,7 +71,7 @@ Ship **v1** by closing gaps between as-built code and the spec: error handling, 
 Execute **one step at a time** per `IMPLEMENTATION.md` working agreement: plan → approve → implement → verify → report.
 
 ```
-R.0 ✓ → 9.0 ✓ → 9.1 ✓ → 9.2 ✓ → 9.3 ✓ → 9.4 ✓ → 9.5 ✓ → 9.6 ✓ → 9.7 → 9.8 → 9.9 → 9.10 → 9.11 → 9.12
+R.0 ✓ → 9.0 ✓ → 9.1 ✓ → 9.2 ✓ → 9.3 ✓ → 9.4 ✓ → 9.5 ✓ → 9.6 ✓ → 9.7 ✓ → 9.8 ✓ → 9.9 ✓ → 9.10 ✓ → 9.11 ✓ → 9.11b ✓ → 9.11c ✓ → 9.12
 ```
 
 | ID | Title | Deliverable summary |
@@ -88,6 +88,8 @@ R.0 ✓ → 9.0 ✓ → 9.1 ✓ → 9.2 ✓ → 9.3 ✓ → 9.4 ✓ → 9.5 ✓ 
 | **9.9** | Application logging | `~/.yanka/runtime/yanka.log`, silenced in tests |
 | **9.10** | Integration tests | `tests/integration/` with real LanceDB + LadybugDB, mocked LLM |
 | **9.11** | Docs refresh | README quickstart, `docs/architecture.md`, `docs/operations.md` |
+| **9.11b** | Spec refresh | Truth-up `yanka-spec.md` §2/§6/§7/§8/§11/§12/§14 to match as-built v1 (no code changes) |
+| **9.11c** | Lint sweep | `line-length = 120` in `pyproject.toml`; fix import order + `session_transcript` E402 |
 | **9.12** | Live smoke (M6 gate) | `docs/live-m6-checklist.md` — real provider `/log` + `/ask` |
 
 ---

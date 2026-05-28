@@ -3,8 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from yanka.config import format_config_display, save_config
-from yanka.config import default_config
+from yanka.config import default_config, format_config_display, save_config
 from yanka.paths import ensure_data_layout, resolve_data_paths
 
 

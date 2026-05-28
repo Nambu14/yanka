@@ -3,6 +3,7 @@ from pathlib import Path
 import click
 
 from yanka import __version__
+from yanka.app_logging import configure_app_logging
 from yanka.paths import DataPaths, resolve_data_paths
 from yanka.rebuild import rebuild_indexes
 from yanka.repl import run_repl
@@ -32,6 +33,7 @@ def main(ctx: click.Context, data_dir: Path | None) -> None:
         paths, _config = run_first_run(bootstrap=paths)
         paths = resolve_data_paths(data_dir or paths.data_dir)
 
+    configure_app_logging(paths)
     ctx.obj[CONTEXT_KEY] = paths
 
     if ctx.invoked_subcommand is None:

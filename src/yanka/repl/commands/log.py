@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yanka.app_logging import get_logger, log_exception
 from yanka.ingest.extraction import RecordExtractionError
 from yanka.ingest.pipeline import IngestAbortError
 from yanka.ingest.pipeline_stages import PipelineStage
@@ -18,6 +19,8 @@ from yanka.repl.prompts import format_last_model_reply
 from yanka.repl.runners import run_live_ingest
 from yanka.repl.types import LogRunner, NoteReader, OutputFn, PromptFn
 from yanka.ui import IngestActivityStage, ingest_stage_label, start_activity
+
+_LOGGER = get_logger(__name__)
 
 
 def run_log_command(
@@ -60,6 +63,7 @@ def run_log_command(
             on_stage=on_stage,
         )
     except RecordExtractionError as exc:
+        log_exception(_LOGGER, "log extraction incomplete", exc, command="log")
         save_pending_log_session(
             paths,
             raw_dump=raw_dump,
@@ -77,6 +81,7 @@ def run_log_command(
         output("Your progress is saved — run /resume to continue.")
         return None
     except IngestAbortError as exc:
+        log_exception(_LOGGER, "log ingest aborted", exc, command="log")
         save_pending_log_session(
             paths,
             raw_dump=raw_dump,
@@ -89,6 +94,7 @@ def run_log_command(
         emit_user_error(output, exc, command="log")
         return None
     except LlmError as exc:
+        log_exception(_LOGGER, "log command failed", exc, command="log")
         save_pending_log_session(
             paths,
             raw_dump=raw_dump,

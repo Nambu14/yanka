@@ -53,8 +53,15 @@ Markdown files with YAML frontmatter. One file per decision record. Plus an appe
 ├── changelog.jsonl         # Append-only operation log
 ├── graph/                  # LadybugDB files (disposable, rebuildable)
 ├── vectors/                # LanceDB files (disposable, rebuildable)
+├── runtime/                # App logs + interrupted session state
+│   ├── yanka.log           # Bounded rotating log (see §12)
+│   └── pending_log_session.json  # Resume payload (see §7, §12)
 └── config.yaml             # User configuration
 ```
+
+`runtime/` is disposable: deleting it loses recent log history and any
+unfinished `/log` session, but no committed record data. It is never read
+by `yanka rebuild`.
 
 **Changelog format:** One JSON line per operation.
 ```json
@@ -266,11 +273,19 @@ embedding:
   model: sentence-transformers/all-MiniLM-L6-v2
 
 extraction:
-  max_rounds: 6             # max clarifying rounds before forced wrap-up
-  conflict_search_limit: 10 # max candidates from vector search for conflict detection
+  max_rounds: 2             # max clarifying rounds before forced wrap-up
+  conflict_search_limit: 10 # max candidates from vector + graph search for conflict detection
+  context_search_limit: 5   # max related records injected into extraction prompt context
 
 data_dir: ~/.yanka
 ```
+
+**Extraction defaults rationale:** `max_rounds: 2` keeps the clarifying loop
+tight by default — most dumps are good enough after one round of questions,
+and the wrap-up prompt produces a record at the cap. Users who want longer
+back-and-forth can raise it. `context_search_limit: 5` bounds how many
+semantic neighbours are pulled into the extraction prompt (Step 1 of §7) so
+the prompt stays small and the LLM stays focused.
 
 **API keys:** Never stored in config file. Stored in system keychain via Python `keyring` library (macOS Keychain, Linux Secret Service, Windows Credential Manager). Environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) as fallback. Keychain takes precedence.
 
@@ -368,7 +383,13 @@ User sends /log + raw dump
 │                          │  5. Embed and insert into LanceDB
 │                          │  File always written FIRST (source
 │                          │  of truth). Graph/vector can be
-│                          │  rebuilt if they fail.
+│                          │  rebuilt if they fail (warning, not
+│                          │  fatal). LLM failures between Step 2
+│                          │  and Step 9 raise IngestAbortError
+│                          │  carrying the stage + in-memory
+│                          │  record; the REPL persists it to
+│                          │  runtime/pending_log_session.json
+│                          │  for stage-aware `/resume`.
 └───────────┬──────────────┘
             │
             ▼
@@ -487,7 +508,14 @@ User sends /ask + question
 │  Step 4: Synthesis       │  "Based on these records, answer the
 │  (LLM — synthesis        │  question. Cite sources. Flag if
 │   prompt)                │  outdated or low confidence."
-│                          │  Plain text output.
+│                          │  Plain text output. Stale-index
+│                          │  resilience: merged hits that point
+│                          │  to missing markdown files are
+│                          │  skipped; a STALE_INDEX_WARNING is
+│                          │  attached to the result with a
+│                          │  `/rebuild` suggestion. If every hit
+│                          │  is stale, a clean fallback answer
+│                          │  is returned instead of crashing.
 └───────────┬──────────────┘
             │
             ▼
@@ -859,15 +887,35 @@ Rich and colorful for visual framework. Conversational and warm for interaction.
 
 ### Commands
 
-| Command | Action |
-|---|---|
-| `/log` | Start a recording session |
-| `/ask` | Query existing knowledge |
-| `/status` | Record count, projects, recent activity |
-| `/history` | Recent records with summaries |
-| `/rebuild` | Reconstruct graph + vectors from files |
-| `/resume` | Continue an interrupted recording session |
-| `/help` | Command reference |
+| Command          | Action                                                       |
+|------------------|--------------------------------------------------------------|
+| `/log`           | Start a recording session                                    |
+| `/ask`           | Query existing knowledge                                     |
+| `/resume`        | Continue an interrupted recording session                    |
+| `/status`        | Record count, projects, recent activity                      |
+| `/history`       | Recent records with summaries (alias: `/h`)                  |
+| `/last`          | Show the most recent record                                  |
+| `/people`        | List people in the graph with decision counts                |
+| `/projects`      | List root context nodes (projects) with record counts        |
+| `/config`        | Show effective configuration (no secret values)              |
+| `/rebuild`       | Reconstruct graph + vectors from files                       |
+| `/help`          | Command reference                                            |
+| `/help <topic>`  | Contextual help for a specific command (`/log`, `/ask`, ...) |
+| `/exit`          | Exit the REPL (aliases: `/quit`, `/q`)                       |
+
+`/help` and `/?` are equivalent. All commands start with `/`; anything else
+is treated as input only when explicitly prompted (e.g. inside `/log`).
+
+### Top-level CLI subcommands
+
+The REPL is the primary surface. The top-level `yanka` binary also exposes:
+
+| Subcommand     | Action                                                                  |
+|----------------|-------------------------------------------------------------------------|
+| `yanka`        | Resolve paths, run first-run setup if needed, then enter the REPL       |
+| `yanka rebuild`| One-shot graph + vector rebuild from `records/` (non-interactive)       |
+
+`/resume` is REPL-only — there is no separate `yanka resume` subcommand.
 
 ### Color system
 
@@ -925,29 +973,106 @@ $ yanka
 
 ### Principle
 
-Never lose data. Always tell the user what happened. `yanka rebuild` is the universal recovery.
+Never lose data. Always tell the user what happened. `yanka rebuild` is the
+universal recovery. Detailed diagnostics go to the log file, not the terminal.
 
-### LLM API fails mid-conversation
+### Typed LLM error hierarchy
 
-Retry once silently. If fails again, save conversation state to temp file. Tell user: "Connection lost. Your progress is saved — run `yanka resume` to pick up where you left off."
+All LLM provider failures surface as subclasses of `LlmError`
+(`src/yanka/llm/client.py`):
 
-### LLM returns malformed output
+| Class                 | When it's raised                                  |
+|-----------------------|---------------------------------------------------|
+| `LlmAuthError`        | Provider rejected the API key                     |
+| `LlmRateLimitError`   | Provider returned a rate-limit / quota error      |
+| `LlmTimeoutError`     | The provider call exceeded the timeout            |
+| `LlmTransportError`   | Network / 5xx / transient connection failure      |
+| `LlmError`            | Any other LLM-related failure (catch-all)         |
 
-Retry once with same input. If still bad:
-- Extraction (no valid `record_complete` record): retry wrap-up prompt once; if still bad, abort session with saved state for `yanka resume`.
-- Claim extraction: store record without claims, flag for re-extraction on `yanka rebuild`.
-- Claim validation failure after retry: proceed with amber warning (see Step 4).
-- Query analysis: default to exploratory with broad search.
-- Conflict evaluation: default to no conflicts (safe fallback).
+Application code catches the subclass it cares about; the REPL catches
+`LlmError` at the boundary and renders a user-facing message via
+`src/yanka/repl/errors.py` (never a raw provider traceback).
+
+### Retry-once policy
+
+`LlmTransportError`, `LlmTimeoutError`, and `LlmRateLimitError` are retried
+**once** silently inside the LLM client. `LlmAuthError` is never retried.
+A second failure of any kind is raised to the caller.
+
+### Pipeline failure modes
+
+- **Extraction (Step 2):** no valid `record_complete` record after the
+  conversation cap. The wrap-up prompt is issued; if the LLM still fails to
+  return a valid record, the session is aborted with saved state for
+  `/resume`. Nothing is written to the stores.
+
+- **Claim extraction (Step 3) / claim validation (Step 4):** validation
+  failure after one retry proceeds with claims as-is, flagged with an amber
+  warning. Never blocks the write.
+
+- **Entity resolution (Step 5) / conflict evaluation (Step 7):** on
+  `LlmError`, degrade — entity resolution treats the new context as new,
+  conflict evaluation defaults to an empty conflicts list — and continue with
+  a warning. The record is still written.
+
+- **Post-extraction abort (Steps 5–9):** if anything raises after a record
+  exists in memory but before the write succeeds, the pipeline raises
+  `IngestAbortError` carrying the failing stage and the in-memory record.
+  The REPL persists this to `runtime/pending_log_session.json` and `/resume`
+  replays the pipeline from the saved stage. No partial state is written to
+  graph or vectors.
+
+- **Query analysis (retrieval Step 1):** on failure, fall back to
+  `query_type: exploratory` with a broad search.
+
+- **Storage inconsistency (ingest Step 9):** markdown is always written
+  first. If graph or vector update fails after, the failure is a warning,
+  not fatal — the record exists; tell the user "indexing incomplete — run
+  `/rebuild` to fix."
+
+- **Stale index at retrieval time:** if merged retrieval hits reference
+  markdown files that are no longer on disk, the missing files are skipped,
+  retrieval continues with the rest, and a `STALE_INDEX_WARNING` (with a
+  `/rebuild` hint) is attached to the result. If every hit is stale, a
+  clean fallback answer is returned instead of crashing.
+
 Never crash. Always degrade.
 
-### Storage inconsistency
+### User-facing messages
 
-Markdown file is always written first. If graph or vector update fails after: log error, tell user "Record saved but indexing incomplete — run `yanka rebuild` to fix."
+`src/yanka/repl/errors.py` maps exceptions to short messages. Examples:
+
+| Failure              | Message shape                                              |
+|----------------------|------------------------------------------------------------|
+| `LlmAuthError`       | API key rejected — check keychain/env vars; `/resume`      |
+| `LlmRateLimitError`  | Provider rate-limited — wait and `/resume`                 |
+| `LlmTimeoutError`    | No response in time — `/resume` when ready                 |
+| `LlmTransportError`  | Can't reach provider — check connection; `/resume`         |
+| Other (`LlmError`)   | See `runtime/yanka.log`; `/resume`                         |
+
+`click.Abort` (e.g. Ctrl-C during a conflict confirmation) is caught
+explicitly in the REPL conflict path so the session does not bubble up an
+ugly `Aborted!` line.
+
+### Application logging
+
+A bounded rotating log captures structured diagnostics:
+
+- **File:** `<data_dir>/runtime/yanka.log`
+- **Rotation:** 5 MB per file, 3 backups (bounded at ~20 MB total).
+- **Contents:** exception tracebacks plus per-command context
+  (`stage`, command name, key arguments). Configured by
+  `src/yanka/app_logging.py`.
+- **Test mode:** silenced in pytest runs.
+
+Terminal output stays concise; the log is the source for post-mortems.
 
 ### Generic handler
 
-For everything else (embedding model corruption, disk full, entity resolution edge cases): clear error message with what happened and what user can do. `yanka rebuild` fixes most things. No silent failures, no stack traces.
+For everything else (embedding model corruption, disk full, entity
+resolution edge cases): the REPL prints a clear, action-oriented message,
+logs the traceback to `yanka.log`, and points the user at `/rebuild` when
+applicable. No silent failures, no stack traces in the terminal.
 
 ---
 
@@ -1003,19 +1128,13 @@ For everything else (embedding model corruption, disk full, entity resolution ed
 | 20 | `record_complete: true` + required-key validation | Safe completion signal; bare `---` is insufficient | Active |
 | 21 | Lightweight claim validation after extraction | Catches record/claim drift; one retry, never blocks write | Active |
 | 22 | Graph + vector conflict candidate search | Graph catches structural/context conflicts; vector catches semantic neighbors | Active |
+| 23 | Typed `LlmError` hierarchy + retry-once on transient | Lets app code decide how to handle each failure; one silent retry catches flaky networks/rate limits without re-prompting the user | Active |
+| 24 | Post-extraction degrade + stage-aware `/resume` | Once a record exists in memory, never throw it away — degrade entity resolution / conflict eval, or persist `IngestAbortError` stage for `/resume` | Active |
+| 25 | Stale-index resilience over crash on missing records | Retrieval skips merged hits whose markdown file is gone, surfaces a `/rebuild` warning, and falls back cleanly when everything is stale | Active |
+| 26 | Bounded rotating file log under `runtime/` | Keeps detailed diagnostics for post-mortems without unbounded growth (5 MB × 3 backups, ~20 MB cap) and without cluttering the terminal | Active |
+| 27 | Parameterized Cypher + consolidated `MERGE … ON CREATE/MATCH SET` | Removes manual escaping risk and halves graph-write round trips during ingest/rebuild | Active |
+| 28 | Graph inspection commands as pure app code (`/people`, `/projects`, `/config`) | Read-only queries over the graph and config — no LLM needed; cheap, deterministic answers | Active |
+| 29 | Statusline record-count cache with directory-fingerprint invalidation | Avoids re-scanning `records/` on every prompt keystroke; invalidates on writes from `/log` and `/resume` | Active |
 
 ---
 
-<a id="open-questions"></a>
-## 15. Open questions
-
-- LadybugDB built-in vector indices — could replace LanceDB? Evaluate.
-- Claim extraction granularity — tune with real data.
-- Conflict detection threshold and graph/vector merge priority — tune with real data.
-- Retrieval graph query patterns and merge scoring — refine in practice, not pre-v1.
-- Entity resolution call volume — monitor in practice.
-- Per-provider prompt variants — how much tuning needed for OpenAI/Google/local.
-- Context node merge operation (`yanka merge`) — not v1, schema should support it.
-- Cloud version architecture — deferred until CLI validated.
-- Multi-record session handling — designed, needs implementation.
-- Staleness threshold — currently 3 months, may need adjustment.

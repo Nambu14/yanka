@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yanka.app_logging import get_logger, log_exception
 from yanka.ingest.extraction import RecordExtractionError
 from yanka.ingest.pipeline import IngestAbortError
 from yanka.ingest.pipeline_stages import PipelineStage
@@ -19,6 +20,8 @@ from yanka.repl.errors import emit_user_error
 from yanka.repl.prompts import format_last_model_reply
 from yanka.repl.runners import run_live_ingest
 from yanka.repl.types import LogRunner, OutputFn, PromptFn
+
+_LOGGER = get_logger(__name__)
 
 
 def run_resume_command(
@@ -38,6 +41,7 @@ def run_resume_command(
     try:
         pending = load_pending_log_session(paths)
     except ValueError as exc:
+        log_exception(_LOGGER, "invalid resume state", exc, command="resume")
         output(f"Pending resume state is invalid: {exc}")
         clear_pending_log_session(paths)
         return None
@@ -58,6 +62,7 @@ def run_resume_command(
             output_fn=output,
         )
     except RecordExtractionError as exc:
+        log_exception(_LOGGER, "resume extraction incomplete", exc, command="resume")
         save_pending_log_session(
             paths,
             raw_dump=pending.raw_dump,
@@ -70,6 +75,7 @@ def run_resume_command(
             output(format_last_model_reply(exc.last_assistant_response))
         return None
     except IngestAbortError as exc:
+        log_exception(_LOGGER, "resume ingest aborted", exc, command="resume")
         save_pending_log_session(
             paths,
             raw_dump=pending.raw_dump,
@@ -82,6 +88,7 @@ def run_resume_command(
         output("Progress is still saved. Run /resume again.")
         return None
     except LlmError as exc:
+        log_exception(_LOGGER, "resume command failed", exc, command="resume")
         save_pending_log_session(
             paths,
             raw_dump=pending.raw_dump,

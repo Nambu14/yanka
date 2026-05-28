@@ -566,8 +566,7 @@ def test_log_prompt_auto_finalizes_on_json_blob(tmp_path: Path) -> None:
     )
 
     assert (
-        reply
-        == "CONVERSATION ENDED. Output ONLY the final record now — no questions."
+        reply == "CONVERSATION ENDED. Output ONLY the final record now — no questions."
     )
     assert "Model returned structured JSON early; finalizing record..." in output
 
@@ -644,6 +643,40 @@ def test_ask_command_prompts_when_question_missing(tmp_path: Path) -> None:
     )
 
     assert "Echo: What about Redis?" in output
+
+
+def test_ask_command_prints_stale_index_warning(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    _seed_record(paths)
+    output: list[str] = []
+
+    def fake_runner(_question, _paths, **_kwargs):
+        return SimpleNamespace(
+            answer="Sessions use PostgreSQL.",
+            answer_view=RetrievalAnswerView(
+                answer="Sessions use PostgreSQL.",
+                sources=[],
+                citations=[],
+                stale_sources=[],
+                has_staleness_warning=False,
+            ),
+            warnings=[
+                "Some indexed records are missing on disk; "
+                "run /rebuild to refresh indexes."
+            ],
+        )
+
+    run_ask_command(
+        paths,
+        question="session storage approach",
+        output_fn=output.append,
+        ask_runner=fake_runner,
+        display_answer=lambda retrieval, out: out(retrieval.answer),
+    )
+
+    assert any(
+        "Warning: Some indexed records are missing on disk;" in line for line in output
+    )
 
 
 def test_ask_command_empty_question_does_not_run_pipeline(tmp_path: Path) -> None:

@@ -18,7 +18,6 @@ from yanka.graph import (
 from yanka.graph.store import clear_graph_db_cache
 from yanka.ingest.conflict_candidates import ConflictCandidate
 from yanka.ingest.pipeline import run_ingest_pipeline
-from yanka.ui.pipeline_activity import IngestActivityStage
 from yanka.ingest.pipeline_stages import (
     CONFLICT_EVALUATION_DEGRADE_WARNING,
     ENTITY_RESOLUTION_DEGRADE_WARNING,
@@ -36,6 +35,7 @@ from yanka.records.models import (
     RecordType,
 )
 from yanka.retrieval_enums import RetrievalSource
+from yanka.ui.pipeline_activity import IngestActivityStage
 from yanka.vectors.indexing import index_claims, index_record
 from yanka.vectors.store import clear_vector_db_cache
 

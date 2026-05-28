@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from yanka.llm.json_parse import JsonParseError, parse_llm_json
+from yanka.records.json_schema import RecordJsonError, record_from_json
+from yanka.records.models import Record
 
 FINAL_CLARIFYING_ROUND_NUDGE = """\
 Final clarifying round: at most 2 brief questions in this message ONLY.
 The next user message ends Q&A — after that you must output ONLY the record JSON."""
-from yanka.records.json_schema import RecordJsonError, record_from_json
-from yanka.records.models import Record
 
 _WRAP_UP_MARKERS = ("CONVERSATION ENDED", "produce the record now")
 _INJECTED_USER_PREFIXES = (
@@ -62,11 +62,7 @@ def build_clarifying_exchange(messages: list[dict[str, str]]) -> str | None:
 
 
 def _format_round(round_number: int, assistant: str, user: str) -> str:
-    return (
-        f"### Round {round_number}\n\n"
-        f"**Assistant:**\n{assistant.strip()}\n\n"
-        f"**User:**\n{user.strip()}"
-    )
+    return f"### Round {round_number}\n\n**Assistant:**\n{assistant.strip()}\n\n**User:**\n{user.strip()}"
 
 
 def _is_injected_user_message(content: str) -> bool:

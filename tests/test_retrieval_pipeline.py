@@ -10,9 +10,13 @@ from yanka.graph import get_graph_db, index_record_graph, init_graph_schema
 from yanka.graph.store import clear_graph_db_cache
 from yanka.paths import ensure_data_layout, resolve_data_paths
 from yanka.records.io import read_record
-from yanka.retrieval import NO_RETRIEVED_RECORDS_ANSWER, run_retrieval_pipeline
-from yanka.ui.pipeline_activity import RetrievalActivityStage
+from yanka.retrieval import (
+    NO_RETRIEVED_RECORDS_ANSWER,
+    STALE_INDEX_WARNING,
+    run_retrieval_pipeline,
+)
 from yanka.retrieval_enums import QueryType, RetrievalSource
+from yanka.ui.pipeline_activity import RetrievalActivityStage
 from yanka.vectors.indexing import index_record
 from yanka.vectors.store import clear_vector_db_cache
 
@@ -118,7 +122,9 @@ def test_run_retrieval_pipeline_mocked_e2e(tmp_path: Path) -> None:
     assert result.merged_hits[0].sources == frozenset(
         {RetrievalSource.GRAPH, RetrievalSource.VECTOR}
     )
-    assert result.answer == "Sessions are stored in PostgreSQL (source: with-claims.md)."
+    assert (
+        result.answer == "Sessions are stored in PostgreSQL (source: with-claims.md)."
+    )
     assert result.answer_view.citations == ["with-claims.md"]
     assert result.answer_view.sources[0].file_reference == "records/with-claims.md"
     assert "RETRIEVED RECORDS:" in synthesis_calls[0][1]["content"]
@@ -192,3 +198,28 @@ def test_run_retrieval_pipeline_historical_without_context_does_not_crash(
     assert result.vector_hits == []
     assert result.merged_hits == []
     assert result.answer == NO_RETRIEVED_RECORDS_ANSWER
+
+
+def test_run_retrieval_pipeline_skips_missing_records_and_warns(tmp_path: Path) -> None:
+    paths = ensure_data_layout(resolve_data_paths(tmp_path))
+    graph = _seed_record(paths)
+
+    def fake_fetch_json(_messages: list[dict[str, str]], **_kwargs) -> dict:
+        return _analysis_json()
+
+    def fail_fetch_text(_messages: list[dict[str, str]], **_kwargs) -> str:
+        raise AssertionError("synthesis LLM should not run with only missing files")
+
+    (paths.records_dir / "with-claims.md").unlink()
+
+    result = run_retrieval_pipeline(
+        "What's our current approach to session storage?",
+        paths,
+        graph=graph,
+        embedding_config=EmbeddingConfig(provider="test", model="fake"),
+        fetch_json=fake_fetch_json,
+        fetch_text=fail_fetch_text,
+    )
+
+    assert result.answer == NO_RETRIEVED_RECORDS_ANSWER
+    assert result.warnings == [STALE_INDEX_WARNING]

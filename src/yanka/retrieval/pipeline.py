@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
@@ -15,7 +15,10 @@ from yanka.retrieval.graph_retrieve import GraphRetrievalHit, retrieve_from_grap
 from yanka.retrieval.merge import MergedRetrievalHit, merge_retrieval_hits
 from yanka.retrieval.output import RetrievalAnswerView, format_retrieval_answer
 from yanka.retrieval.query_analysis import QueryAnalysis, analyze_query
-from yanka.retrieval.synthesis import synthesize_retrieval_answer
+from yanka.retrieval.synthesis import (
+    STALE_INDEX_WARNING,
+    synthesize_retrieval_answer_detailed,
+)
 from yanka.retrieval.vector_retrieve import VectorRetrievalHit, retrieve_from_vector
 from yanka.ui.pipeline_activity import RetrievalActivityStage, RetrievalOnStage
 
@@ -34,6 +37,7 @@ class RetrievalResult:
     merged_hits: list[MergedRetrievalHit]
     answer: str
     answer_view: RetrievalAnswerView
+    warnings: list[str] = field(default_factory=list)
 
 
 def run_retrieval_pipeline(
@@ -89,7 +93,7 @@ def run_retrieval_pipeline(
         limit=merge_limit,
     )
     emit_stage(RetrievalActivityStage.SYNTHESIZING)
-    answer = synthesize_retrieval_answer(
+    synthesis = synthesize_retrieval_answer_detailed(
         question,
         analysis,
         merged_hits,
@@ -97,7 +101,10 @@ def run_retrieval_pipeline(
         config=llm_config,
         fetch_text=fetch_text,
     )
-    answer_view = format_retrieval_answer(answer, merged_hits, today=today)
+    answer_view = format_retrieval_answer(synthesis.answer, merged_hits, today=today)
+    warnings: list[str] = []
+    if synthesis.missing_file_references:
+        warnings.append(STALE_INDEX_WARNING)
 
     return RetrievalResult(
         question=question,
@@ -105,6 +112,7 @@ def run_retrieval_pipeline(
         graph_hits=graph_hits,
         vector_hits=vector_hits,
         merged_hits=merged_hits,
-        answer=answer,
+        answer=synthesis.answer,
         answer_view=answer_view,
+        warnings=warnings,
     )

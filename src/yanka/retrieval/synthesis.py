@@ -30,18 +30,48 @@ class RetrievedRecordBundle:
     raw_markdown: str
 
 
+@dataclass(frozen=True)
+class RetrievedRecordsLoadResult:
+    """Retrieved records plus stale references skipped from disk."""
+
+    records: list[RetrievedRecordBundle]
+    missing_file_references: list[str]
+
+
+@dataclass(frozen=True)
+class RetrievalSynthesisResult:
+    """Synthesis answer plus stale references skipped before synthesis."""
+
+    answer: str
+    missing_file_references: list[str]
+
+
+STALE_INDEX_WARNING = (
+    "Some indexed records are missing on disk; run /rebuild to refresh indexes."
+)
+
+
 def load_retrieved_records(
     hits: list[MergedRetrievalHit],
     paths: DataPaths | None = None,
 ) -> list[RetrievedRecordBundle]:
     """Load raw markdown files referenced by merged retrieval hits."""
+    return load_retrieved_records_detailed(hits, paths).records
+
+
+def load_retrieved_records_detailed(
+    hits: list[MergedRetrievalHit],
+    paths: DataPaths | None = None,
+) -> RetrievedRecordsLoadResult:
+    """Load raw markdown and collect stale file references."""
     resolved = paths if paths is not None else resolve_data_paths()
     bundles: list[RetrievedRecordBundle] = []
+    missing: list[str] = []
     for hit in hits:
         path = _record_path(resolved, hit.file_reference)
         if not path.is_file():
-            msg = f"retrieved record is missing on disk: {hit.file_reference}"
-            raise RetrievalSynthesisError(msg)
+            missing.append(hit.file_reference)
+            continue
         bundles.append(
             RetrievedRecordBundle(
                 hit=hit,
@@ -49,7 +79,10 @@ def load_retrieved_records(
                 raw_markdown=path.read_text(encoding="utf-8"),
             )
         )
-    return bundles
+    return RetrievedRecordsLoadResult(
+        records=bundles,
+        missing_file_references=missing,
+    )
 
 
 def build_retrieval_synthesis_messages(
@@ -101,18 +134,54 @@ def synthesize_retrieval_answer(
     fetch_text: FetchTextFn | None = None,
 ) -> str:
     """Synthesize a plain-text answer from merged retrieval hits."""
+    return synthesize_retrieval_answer_detailed(
+        question,
+        analysis,
+        merged_hits,
+        paths=paths,
+        config=config,
+        fetch_text=fetch_text,
+    ).answer
+
+
+def synthesize_retrieval_answer_detailed(
+    question: str,
+    analysis: QueryAnalysis,
+    merged_hits: list[MergedRetrievalHit],
+    *,
+    paths: DataPaths | None = None,
+    config: LlmConfig | None = None,
+    fetch_text: FetchTextFn | None = None,
+) -> RetrievalSynthesisResult:
+    """Synthesize answer and return stale references skipped from disk."""
     if not merged_hits:
-        return NO_RETRIEVED_RECORDS_ANSWER
+        return RetrievalSynthesisResult(
+            answer=NO_RETRIEVED_RECORDS_ANSWER,
+            missing_file_references=[],
+        )
 
     resolved = paths if paths is not None else resolve_data_paths()
-    records = load_retrieved_records(merged_hits, resolved)
-    messages = build_retrieval_synthesis_messages(question, analysis, records)
+    loaded = load_retrieved_records_detailed(merged_hits, resolved)
+    if not loaded.records:
+        return RetrievalSynthesisResult(
+            answer=NO_RETRIEVED_RECORDS_ANSWER,
+            missing_file_references=loaded.missing_file_references,
+        )
+    messages = build_retrieval_synthesis_messages(
+        question,
+        analysis,
+        loaded.records,
+    )
     fetch = fetch_text if fetch_text is not None else send_messages
     try:
-        return fetch(messages, paths=resolved, config=config)
+        answer = fetch(messages, paths=resolved, config=config)
     except LlmError as exc:
         msg = "retrieval synthesis LLM call failed"
         raise RetrievalSynthesisError(msg) from exc
+    return RetrievalSynthesisResult(
+        answer=answer,
+        missing_file_references=loaded.missing_file_references,
+    )
 
 
 def _record_path(paths: DataPaths, file_reference: str) -> Path:
