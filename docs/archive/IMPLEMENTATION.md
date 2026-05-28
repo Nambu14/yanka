@@ -1,9 +1,10 @@
-# Yanka — Implementation Plan
+# Yanka — Implementation Plan (archived)
 
-Step-by-step build plan for the CLI described in [`yanka-spec.md`](yanka-spec.md).
-Each step is one PR-sized (or smaller) unit: implement → verify → move on.
+Historical step-by-step build plan for v1. **Implementation is complete** (Phases
+0–9 and **R.0**). For current behavior, use [`yanka-spec.md`](../../yanka-spec.md)
+and [`docs/architecture.md`](../architecture.md).
 
-**Status:** Phases 0–8 and **R.0** complete. Next **Phase 9** (wrap-up — see [`docs/phase-9-wrap-up.md`](docs/phase-9-wrap-up.md)).
+Each step was one PR-sized (or smaller) unit: implement → verify → move on.
 
 ---
 
@@ -209,7 +210,7 @@ Build bottom-up: write path first, then conversation, then intelligence.
 | 6.10 | Conflict evaluation | step 7, prompt 3 | Mock conflicts | ✓ |
 | 6.11 | User confirmation | step 8 | yes/no per conflict | ✓ |
 | 6.12a | Ingest orchestrator (mocked) | steps 1–10 | `pytest` E2E with mocked LLM; no network | ✓ |
-| 6.12b | Ingest orchestrator (live) | steps 1–10 | [live-ingest-checklist.md](docs/live-ingest-checklist.md) + `scripts/live_ingest.py` | ✓ |
+| 6.12b | Ingest orchestrator (live) | steps 1–10 | REPL `/log` + pipeline tests | ✓ |
 
 **Gate:** 6.12a must pass before 6.12b.
 
@@ -260,11 +261,9 @@ Build bottom-up: write path first, then conversation, then intelligence.
 
 ## Phase 9 — Wrap-up (hardening, polish, coverage)
 
-Full plan, review findings, and slice notes: **[`docs/phase-9-wrap-up.md`](docs/phase-9-wrap-up.md)**.
-
 | Step | Topic | Verify |
 |------|--------|--------|
-| 9.0 | Reviews + plan in repo | `docs/phase-9-wrap-up.md` present | ✓ |
+| 9.0 | Reviews + plan in repo | wrap-up scope captured in repo | ✓ |
 | 9.1 | Typed `LlmError` + retry-once + LiteLLM import quiet | unit tests per error class | ✓ |
 | 9.2 | Post-extraction failure → save state + degrade | resume tests per stage | ✓ |
 | 9.3 | REPL error mapper + `click.Abort` containment | REPL error snapshots | ✓ |
@@ -278,7 +277,7 @@ Full plan, review findings, and slice notes: **[`docs/phase-9-wrap-up.md`](docs/
 | 9.11 | README + architecture + operations docs | manual review | ✓ |
 | 9.11b | Spec refresh (post-Phase-9 drift): §2 runtime/, §6 defaults, §7/§8 notes, §11 commands, §12 errors, §14 decisions | manual review | ✓ |
 | 9.11c | Lint sweep: `line-length = 120`, import order, `session_transcript` E402 | `ruff check src tests` | ✓ |
-| 9.12 | Live smoke (M6 exit) | `docs/live-m6-checklist.md` |
+| 9.12 | Live smoke (M6 exit) | manual `/log` + `/ask` with real provider | |
 | 9.13 | Per-claim duplicate guard (drop restated claims; raise `IngestDuplicateRecordError` when all duplicate) | `tests/test_duplicate_claims.py`, pipeline scenarios | ✓ |
 
 **Also covers (from original 9.x):** malformed record wrap-up (8.3d), index fail warn (6.1), no user tracebacks (9.3).

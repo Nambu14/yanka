@@ -79,8 +79,8 @@ with rotation:
 
 ## Documentation
 
-- Implementation tracker: [`IMPLEMENTATION.md`](IMPLEMENTATION.md)
-- Phase 9 wrap-up scope: [`docs/phase-9-wrap-up.md`](docs/phase-9-wrap-up.md)
+- Product spec: [`yanka-spec.md`](yanka-spec.md)
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - Operations runbook: [`docs/operations.md`](docs/operations.md)
 - Future ideas: [`docs/future-improvements.md`](docs/future-improvements.md)
+- Archived v1 build plan: [`docs/archive/IMPLEMENTATION.md`](docs/archive/IMPLEMENTATION.md)
