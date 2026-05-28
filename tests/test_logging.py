@@ -44,8 +44,7 @@ def test_configure_app_logging_is_idempotent(tmp_path: Path) -> None:
         sum(
             1
             for handler in logger.handlers
-            if getattr(handler, "baseFilename", None) is not None
-            and Path(handler.baseFilename) == first
+            if getattr(handler, "baseFilename", None) is not None and Path(handler.baseFilename) == first
         )
         == 1
     )

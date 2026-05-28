@@ -155,7 +155,10 @@ Who is carrying this forward. Who to ask about it.
 Environmental factors — team size, system scale, version numbers, temporary constraints. Only if relevant.
 
 ## Raw input
-> The user's original dump, verbatim. Always include. Never edit.
+
+The user's original dump, verbatim. Always include. Never edit. On disk this
+section is wrapped in a single ` ```text ` fenced block (not line-by-line `>`
+quotes) so lines like `1.` are not turned into markdown lists.
 ```
 
 ### Field definitions
@@ -265,7 +268,7 @@ Stored at `~/.yanka/config.yaml`:
 ```yaml
 llm:
   provider: claude          # claude | openai | google | ollama
-  model: claude-sonnet-4-20250514  # provider-specific model string
+  model: claude-3-5-haiku-latest  # see default models table below
   endpoint: null            # custom endpoint for ollama
 
 embedding:
@@ -276,9 +279,21 @@ extraction:
   max_rounds: 2             # max clarifying rounds before forced wrap-up
   conflict_search_limit: 10 # max candidates from vector + graph search for conflict detection
   context_search_limit: 5   # max related records injected into extraction prompt context
+  duplicate_claim_max_distance: 0.15 # LanceDB L2 distance threshold for per-claim duplicate guard
 
 data_dir: ~/.yanka
 ```
+
+**Default LLM models (first-run wizard):** Choosing a provider in setup writes
+the matching `model` below (fast/cheap tier, roughly comparable to
+`gpt-4o-mini`). Override `model` in `config.yaml` anytime.
+
+| Provider | Default `model` |
+|----------|-----------------|
+| `claude` | `claude-3-5-haiku-latest` |
+| `openai` | `gpt-4o-mini` |
+| `google` | `gemini-2.0-flash-lite` |
+| `ollama` | `llama3.2:3b` |
 
 **Extraction defaults rationale:** `max_rounds: 2` keeps the clarifying loop
 tight by default — most dumps are good enough after one round of questions,
@@ -289,7 +304,9 @@ the prompt stays small and the LLM stays focused.
 
 **API keys:** Never stored in config file. Stored in system keychain via Python `keyring` library (macOS Keychain, Linux Secret Service, Windows Credential Manager). Environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) as fallback. Keychain takes precedence.
 
-**First-run flow:** Only asks `llm.provider` and API key. Everything else uses defaults.
+**First-run flow:** Asks data directory, `llm.provider`, and API key (except
+Ollama). Writes `config.yaml` with the provider and its default `model` from
+the table above. Everything else uses defaults.
 
 **LLM abstraction:** LiteLLM for provider switching. Supports Claude, OpenAI, Google, Ollama.
 
@@ -345,6 +362,17 @@ User sends /log + raw dump
 │  (app code + LLM         │  Normalize → check aliases → LLM
 │   fallback)              │  fallback for unknowns → ask user
 │                          │  for ambiguous cases.
+└───────────┬──────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│  Step 5.5: Duplicate     │  Per-claim vector search in the same
+│  claim guard             │  project + context subtree. Drop any
+│  (app code)              │  new claim whose nearest active hit
+│                          │  is ≤ duplicate_claim_max_distance.
+│                          │  Renumber survivors c1..cN. If all
+│                          │  claims dropped → IngestDuplicateRecord
+│                          │  Error (no file, no resume).
 └───────────┬──────────────┘
             │
             ▼
@@ -447,6 +475,32 @@ Catches drift between the extraction pass (record + `decision` field) and the cl
 4. **If still failing after retry:** Proceed with claims as-is; flag in confirmation output (amber) that claim coverage may be incomplete. Never block the write.
 
 Optional future tightening: a dedicated validation LLM call. Not required for v1.
+
+### Per-claim duplicate guard (Step 5.5 detail)
+
+Runs after entity resolution so the project + context subtree is final.
+Distinct from conflict detection: catches **restatements** (same assertion
+re-logged for context), not contradictions.
+
+1. **Embed each new claim** with the configured embedding backend.
+2. **Search LanceDB claims table** filtered by `status=active`,
+   `project=context_path[0]`, `context_path LIKE "<full path>%"` —
+   limit 3 hits per claim.
+3. **Take the best hit** (lowest LanceDB `_distance`). If
+   `distance ≤ extraction.duplicate_claim_max_distance` (default `0.15`),
+   record a match: `(new_claim_id, existing_claim_id, existing_file, distance)`.
+4. **Drop matched claims** from the record and **renumber** the survivors
+   so written ids stay contiguous `c1..cN`.
+5. If **every** claim was a match, raise `IngestDuplicateRecordError`
+   before any write. The REPL prints the source file(s) and clears any
+   pending resume state; nothing is saved.
+6. Otherwise continue to conflict evaluation with the survivors. The
+   confirmation panel shows a **Skipped (duplicates)** section listing
+   each dropped claim and the existing claim it restated.
+
+Skipped claims do **not** add `supersedes` to the existing record — they
+restate, not contradict. Use the conflict path to record contradictions
+that require supersession.
 
 ### Graph-assisted conflict search (Step 6 detail)
 
@@ -940,7 +994,7 @@ The REPL is the primary surface. The top-level `yanka` binary also exposes:
 
 **Retrieval answer:** Subtle card background. Inline citations. Supersession timeline (vertical dots — green for active, hollow red for superseded). Source list with status badges. Staleness warning in amber.
 
-**Thinking states:** Italic gray text: "searching for related records...", "extracting claims...", "validating claims...", "checking for conflicts..."
+**Thinking states:** Italic gray text: "searching for related records...", "structuring decision record...", "validating claims...", "checking for conflicts...". The activity spinner stops while the user answers clarifying questions.
 
 ### First-run experience
 

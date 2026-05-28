@@ -89,12 +89,9 @@ def _format_evaluation_input(
     project = context_path[0] if context_path else "unknown"
     context_label = "/".join(context_path) if context_path else "unknown"
 
-    new_lines = [
-        f'- {claim.id}: "{claim.content}"' for claim in new_claims
-    ]
+    new_lines = [f'- {claim.id}: "{claim.content}"' for claim in new_claims]
     existing_lines = [
-        _format_candidate_line(candidate, project=project, context=context_label)
-        for candidate in candidates
+        _format_candidate_line(candidate, project=project, context=context_label) for candidate in candidates
     ]
 
     parts = [
@@ -164,10 +161,7 @@ def _parse_conflict_item(item: Any) -> tuple[str, str, str] | None:
     new_claim_id = item.get("new_claim_id")
     existing_claim_id = item.get("existing_claim_id")
     reason = item.get("reason")
-    if not all(
-        isinstance(value, str) and value.strip()
-        for value in (new_claim_id, existing_claim_id, reason)
-    ):
+    if not all(isinstance(value, str) and value.strip() for value in (new_claim_id, existing_claim_id, reason)):
         return None
 
     return new_claim_id, existing_claim_id, reason.strip()

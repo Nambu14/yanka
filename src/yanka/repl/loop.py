@@ -120,10 +120,7 @@ def run_repl(
         if command == "/log" or command.startswith("/log "):
             statement = command[4:].strip() if command.startswith("/log ") else ""
             if has_pending_log_session(paths):
-                output(
-                    "You have interrupted /log work pending. "
-                    "Run /resume to continue it."
-                )
+                output("You have interrupted /log work pending. Run /resume to continue it.")
                 choice = prompt("Start a new /log and discard pending work? [y/N]: ")
                 if choice.strip().lower() not in {"y", "yes"}:
                     output("Cancelled. Pending work kept.")

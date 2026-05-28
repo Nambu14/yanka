@@ -58,6 +58,22 @@ Inside REPL:
 - `/projects`
 - `/config`
 
+## LLM provider and default models
+
+First-run setup writes `llm.provider` and a matching default `llm.model`
+(fast/cheap tier). To switch provider later, edit `config.yaml` or delete it
+and re-run `yanka` (keychain keys are kept).
+
+| Provider | Default `model` |
+|----------|-----------------|
+| `claude` | `claude-3-5-haiku-latest` |
+| `openai` | `gpt-4o-mini` |
+| `google` | `gemini-2.0-flash-lite` |
+| `ollama` | `llama3.2:3b` |
+
+Use `/config` to see the effective file contents. API keys are never stored in
+the YAML file (keyring or env vars only).
+
 ## Troubleshooting
 
 ## Generic provider/runtime failures

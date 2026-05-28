@@ -6,6 +6,7 @@ from yanka.ui.conflict_confirm import (
 )
 from yanka.ui.ingest_confirm import (
     IngestConfirmationView,
+    SkippedClaim,
     confirmation_view_from_record,
     render_ingest_confirmation,
 )
@@ -31,6 +32,7 @@ from yanka.ui.system import (
 
 __all__ = [
     "IngestConfirmationView",
+    "SkippedClaim",
     "confirmation_view_from_record",
     "default_conflict_prompt",
     "render_conflict_prompt",

@@ -106,11 +106,6 @@ def test_index_record_reindex_uses_current_record_fields(tmp_path: Path) -> None
         [0.0, 0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 3),
         dtype=np.float32,
     )
-    row = (
-        get_records_table(paths)
-        .search(query)
-        .limit(1)
-        .to_list()[0]
-    )
+    row = get_records_table(paths).search(query).limit(1).to_list()[0]
     assert row["summary"] == "ZZZ_UNIQUE_MARKER"
     assert row["vector"][2] == 1.0

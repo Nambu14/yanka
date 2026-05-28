@@ -5,6 +5,7 @@ from __future__ import annotations
 import yaml
 
 from yanka.records.models import Claim, Record, RecordBody
+from yanka.records.verbatim import format_verbatim_block
 
 _BODY_SECTIONS: tuple[tuple[str, str], ...] = (
     ("Rationale", "rationale"),
@@ -72,21 +73,7 @@ def _format_body(body: RecordBody) -> str:
         content = getattr(body, field_name)
         if not content or not str(content).strip():
             continue
-        if field_name == "raw_input":
-            content = _format_raw_input(str(content))
+        if field_name in {"raw_input", "clarifying_exchange"}:
+            content = format_verbatim_block(str(content))
         parts.append(f"## {heading}\n{content}")
     return "\n\n".join(parts)
-
-
-def _format_raw_input(content: str) -> str:
-    lines = content.splitlines()
-    if not lines:
-        return "> "
-    formatted: list[str] = []
-    for line in lines:
-        stripped = line.lstrip()
-        if stripped.startswith(">"):
-            formatted.append(stripped)
-        else:
-            formatted.append(f"> {line}" if line else ">")
-    return "\n".join(formatted)

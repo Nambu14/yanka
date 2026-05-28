@@ -17,7 +17,10 @@ from yanka.graph import (
 )
 from yanka.graph.store import clear_graph_db_cache
 from yanka.ingest.conflict_candidates import ConflictCandidate
-from yanka.ingest.pipeline import run_ingest_pipeline
+from yanka.ingest.pipeline import (
+    IngestDuplicateRecordError,
+    run_ingest_pipeline,
+)
 from yanka.ingest.pipeline_stages import (
     CONFLICT_EVALUATION_DEGRADE_WARNING,
     ENTITY_RESOLUTION_DEGRADE_WARNING,
@@ -93,7 +96,14 @@ def _pipeline_embed(
         lower = text.lower()
         if "15 minutes" in lower or "token lifetime is 15" in lower:
             vectors.append([1.0] + [0.0] * (EMBEDDING_DIM - 1))
-        elif "30 minutes" in lower or "postgresql" in lower:
+        elif (
+            "session data is stored in postgresql" in lower
+            or ("postgresql" in lower and "session" in lower)
+        ):
+            vectors.append([0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 2))
+        elif "redis is not used" in lower:
+            vectors.append([0.0, 0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 3))
+        elif "30 minutes" in lower:
             vectors.append([0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 2))
         else:
             vectors.append([0.0] * EMBEDDING_DIM)
@@ -168,6 +178,33 @@ def test_ingest_pipeline_happy_path(paths, graph) -> None:
     assert entries[0].action == "create"
 
 
+def test_ingest_pipeline_calls_before_confirmation_when_showing_panel(
+    paths, graph
+) -> None:
+    called = False
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+
+    def mark_before_confirmation() -> None:
+        nonlocal called
+        called = True
+
+    run_ingest_pipeline(
+        "Dropping Redis for sessions",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
+        fetch_json=_mock_fetch(),
+        graph=graph,
+        filename="2026-05-14-drop-redis.md",
+        embedding_config=embed_config,
+        show_confirmation=True,
+        before_confirmation=mark_before_confirmation,
+        confirmation_output=lambda _line: None,
+    )
+
+    assert called
+
+
 def test_ingest_pipeline_on_stage_order(paths, graph) -> None:
     stages: list[str] = []
     embed_config = EmbeddingConfig(provider="test", model="fake")
@@ -188,6 +225,7 @@ def test_ingest_pipeline_on_stage_order(paths, graph) -> None:
         IngestActivityStage.SEARCHING,
         IngestActivityStage.EXTRACTING,
         IngestActivityStage.VALIDATING,
+        IngestActivityStage.DEDUPING,
         IngestActivityStage.CONFLICT_CHECK,
         IngestActivityStage.WRITING,
     ]
@@ -228,6 +266,7 @@ def test_ingest_pipeline_on_stage_resume_skips_extraction(paths, graph) -> None:
     )
 
     assert stages == [
+        IngestActivityStage.DEDUPING,
         IngestActivityStage.CONFLICT_CHECK,
         IngestActivityStage.WRITING,
     ]
@@ -365,6 +404,92 @@ def test_ingest_pipeline_conflict_evaluation_llm_error_still_writes(
     assert result.write_result.path.is_file()
     assert result.confirmed_conflicts == []
     assert CONFLICT_EVALUATION_DEGRADE_WARNING in result.warnings
+
+
+def _pre_index_existing_record(
+    paths,
+    graph,
+    *,
+    claim_contents: list[str],
+    filename: str = "2026-04-01-existing.md",
+) -> Record:
+    existing = Record(
+        date=date(2026, 4, 1),
+        type=RecordType.DECISION,
+        status=RecordStatus.ACTIVE,
+        context_path=["main-platform", "auth-service"],
+        decision="Existing decision",
+        claims=[
+            Claim(id=f"c{idx + 1}", content=content, status=ClaimStatus.ACTIVE)
+            for idx, content in enumerate(claim_contents)
+        ],
+        record_complete=True,
+        source_path=paths.records_dir / filename,
+    )
+    paths.records_dir.mkdir(parents=True, exist_ok=True)
+    upsert_context_path(["main-platform", "auth-service"], graph)
+    index_record_graph(existing, graph, paths)
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+    index_record(existing, paths, config=embed_config)
+    index_claims(existing, paths, config=embed_config)
+    return existing
+
+
+def test_ingest_pipeline_drops_duplicate_claim_and_renumbers(paths, graph) -> None:
+    _pre_index_existing_record(
+        paths,
+        graph,
+        claim_contents=["Session data is stored in PostgreSQL"],
+    )
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+
+    result = run_ingest_pipeline(
+        "Dropping Redis for sessions",
+        paths,
+        prompt_user=MagicMock(),
+        send=lambda _messages, **_kwargs: COMPLETE_JSON,
+        fetch_json=_mock_fetch(),
+        graph=graph,
+        filename="2026-05-14-drop-redis-dedupe.md",
+        embedding_config=embed_config,
+    )
+
+    assert result.write_result.path.is_file()
+    assert len(result.record.claims) == 1
+    assert [c.id for c in result.record.claims] == ["c1"]
+    assert result.record.claims[0].content == "Redis is not used for session storage"
+    assert len(result.duplicate_claims) == 1
+    assert result.duplicate_claims[0].new_content == "Session data is stored in PostgreSQL"
+    assert result.duplicate_claims[0].existing_file == "records/2026-04-01-existing.md"
+
+
+def test_ingest_pipeline_raises_when_every_claim_is_duplicate(paths, graph) -> None:
+    _pre_index_existing_record(
+        paths,
+        graph,
+        claim_contents=[
+            "Session data is stored in PostgreSQL",
+            "Redis is not used for session storage",
+        ],
+    )
+    embed_config = EmbeddingConfig(provider="test", model="fake")
+
+    with pytest.raises(IngestDuplicateRecordError) as excinfo:
+        run_ingest_pipeline(
+            "Dropping Redis for sessions",
+            paths,
+            prompt_user=MagicMock(),
+            send=lambda _messages, **_kwargs: COMPLETE_JSON,
+            fetch_json=_mock_fetch(),
+            graph=graph,
+            filename="2026-05-14-drop-redis-all-dupe.md",
+            embedding_config=embed_config,
+        )
+
+    assert len(excinfo.value.duplicate_claims) == 2
+    assert excinfo.value.existing_files == ["records/2026-04-01-existing.md"]
+    assert not (paths.records_dir / "2026-05-14-drop-redis-all-dupe.md").exists()
+    assert list(iter_changelog(paths)) == []
 
 
 def test_ingest_pipeline_resumes_from_entity_stage(paths, graph) -> None:

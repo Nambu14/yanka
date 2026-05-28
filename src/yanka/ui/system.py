@@ -67,11 +67,7 @@ def print_welcome_panel(output_fn: OutputFn, paths: DataPaths) -> None:
     if records:
         lines.append(f"Records: {len(records)}")
         projects = sorted(
-            {
-                record_file.record.context_path[0]
-                for record_file in records
-                if record_file.record.context_path
-            }
+            {record_file.record.context_path[0] for record_file in records if record_file.record.context_path}
         )
         if projects:
             preview = ", ".join(projects[:5])
@@ -151,5 +147,3 @@ class _FallbackActivity:
 
     def stop(self) -> None:
         return None
-
-

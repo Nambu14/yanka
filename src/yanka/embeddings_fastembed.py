@@ -30,10 +30,7 @@ def _get_text_embedding(model_name: str):
     try:
         from fastembed import TextEmbedding
     except ImportError as exc:
-        msg = (
-            "fastembed is not installed. "
-            'Install with: pip install -e ".[embedding]"'
-        )
+        msg = 'fastembed is not installed. Install with: pip install -e ".[embedding]"'
         raise EmbeddingError(msg) from exc
 
     if model_name not in _models:

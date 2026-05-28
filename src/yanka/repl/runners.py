@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from yanka.ingest.pipeline_stages import PipelineStage
@@ -23,13 +24,20 @@ def run_live_ingest(
     stage: PipelineStage | None = None,
     record: Record | None = None,
     on_stage: IngestOnStage | None = None,
+    before_blocking_prompt: Callable[[], None] | None = None,
+    before_confirmation: Callable[[], None] | None = None,
 ) -> Any:
     from yanka.config import load_config
     from yanka.ingest import run_ingest_pipeline
     from yanka.ingest.entity_resolution import make_fetch_resolution
+
     config = load_config(paths) if paths.config_path.is_file() else None
     llm_config = config.llm if config is not None else None
     embedding_config = config.embedding if config is not None else None
+
+    def _before_prompt() -> None:
+        if before_blocking_prompt is not None:
+            before_blocking_prompt()
 
     return run_ingest_pipeline(
         raw_dump,
@@ -38,12 +46,14 @@ def run_live_ingest(
             assistant_message,
             input_fn=input_fn,
             output_fn=output_fn,
+            before_prompt=_before_prompt,
         ),
         fetch_resolution=make_fetch_resolution(paths=paths, llm_config=llm_config),
         ask_user=lambda question: ask_log_user(
             question,
             input_fn=input_fn,
             output_fn=output_fn,
+            before_prompt=_before_prompt,
         ),
         prompt_confirm=repl_conflict_prompt,
         show_confirmation=True,
@@ -53,6 +63,8 @@ def run_live_ingest(
         resume_stage=stage,
         resume_record=record,
         on_stage=on_stage,
+        before_confirmation=before_confirmation,
+        confirmation_output=output_fn,
     )
 
 

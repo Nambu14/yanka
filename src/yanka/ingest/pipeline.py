@@ -13,6 +13,11 @@ from yanka.ingest.claim_validation import extract_claims_validated
 from yanka.ingest.conflict_candidates import find_conflict_candidates
 from yanka.ingest.conflict_confirmation import confirm_detected_conflicts
 from yanka.ingest.conflict_evaluation import DetectedConflict, evaluate_conflicts
+from yanka.ingest.duplicate_claims import (
+    DuplicateClaimMatch,
+    drop_duplicate_claims,
+    find_duplicate_claims,
+)
 from yanka.ingest.entity_resolution import resolve_record_context_path_degrading
 from yanka.ingest.extraction import (
     run_record_extraction_loop_detailed,
@@ -53,6 +58,30 @@ class IngestAbortError(LlmError):
         self.messages = messages if messages is not None else []
 
 
+class IngestDuplicateRecordError(Exception):
+    """All claims in the ingest restate existing active claims; nothing to save."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        duplicate_claims: list[DuplicateClaimMatch],
+    ) -> None:
+        super().__init__(message)
+        self.duplicate_claims = list(duplicate_claims)
+
+    @property
+    def existing_files(self) -> list[str]:
+        """Unique source files matched by the dropped claims, in first-seen order."""
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for match in self.duplicate_claims:
+            if match.existing_file and match.existing_file not in seen:
+                seen.add(match.existing_file)
+                ordered.append(match.existing_file)
+        return ordered
+
+
 @dataclass
 class IngestResult:
     """Outcome of a full ingest pipeline run."""
@@ -61,6 +90,7 @@ class IngestResult:
     write_result: WriteResult
     warnings: list[str] = field(default_factory=list)
     confirmed_conflicts: list[DetectedConflict] = field(default_factory=list)
+    duplicate_claims: list[DuplicateClaimMatch] = field(default_factory=list)
     clarifying_rounds: int = 0
     confirmation_view: IngestConfirmationView | None = None
 
@@ -84,6 +114,8 @@ def run_ingest_pipeline(
     resume_stage: PipelineStage | None = None,
     resume_record: Record | None = None,
     on_stage: IngestOnStage | None = None,
+    before_confirmation: Callable[[], None] | None = None,
+    confirmation_output: Callable[[str], None] | None = None,
 ) -> IngestResult:
     """Run ingest steps 1–10 (spec §7) with injectable LLM and user hooks."""
     resolved = paths if paths is not None else resolve_data_paths()
@@ -148,6 +180,31 @@ def run_ingest_pipeline(
         )
         warnings.extend(entity_warnings)
 
+    duplicate_matches: list[DuplicateClaimMatch] = []
+    if start_stage.runs_at_or_before(PipelineStage.DUPLICATE_CLAIMS):
+        emit_stage(IngestActivityStage.DEDUPING)
+        duplicate_matches = find_duplicate_claims(
+            record.claims,
+            record.context_path,
+            paths=resolved,
+            config=embedding_config,
+        )
+        if duplicate_matches:
+            survivors = drop_duplicate_claims(record.claims, duplicate_matches)
+            if not survivors:
+                files = ", ".join(
+                    _format_duplicate_files(duplicate_matches)
+                ) or "an existing record"
+                msg = (
+                    "Every claim in this ingest restates an existing record "
+                    f"({files}); nothing new to save."
+                )
+                raise IngestDuplicateRecordError(
+                    msg,
+                    duplicate_claims=duplicate_matches,
+                )
+            record = replace(record, claims=survivors)
+
     confirmed: list[DetectedConflict] = []
     if start_stage.runs_at_or_before(PipelineStage.CONFLICT_EVALUATION):
         emit_stage(IngestActivityStage.CONFLICT_CHECK)
@@ -202,15 +259,30 @@ def run_ingest_pipeline(
         path=write_result.path,
         write_result=write_result,
         extra_warnings=warnings,
+        duplicate_claims=duplicate_matches,
     )
     if show_confirmation:
-        render_ingest_confirmation(view)
+        if before_confirmation is not None:
+            before_confirmation()
+        render_ingest_confirmation(view, output_fn=confirmation_output)
 
     return IngestResult(
         record=record,
         write_result=write_result,
         warnings=warnings,
         confirmed_conflicts=confirmed,
+        duplicate_claims=duplicate_matches,
         clarifying_rounds=clarifying_rounds,
         confirmation_view=view,
     )
+
+
+def _format_duplicate_files(matches: list[DuplicateClaimMatch]) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for match in matches:
+        name = match.existing_file
+        if name and name not in seen:
+            seen.add(name)
+            ordered.append(name)
+    return ordered

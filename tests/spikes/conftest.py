@@ -36,7 +36,4 @@ def ollama_has_model(model: str, base_url: str = "http://127.0.0.1:11434") -> bo
 @pytest.fixture
 def require_ollama_qwen() -> None:
     if not ollama_has_model("qwen3:8b"):
-        pytest.skip(
-            "Ollama with qwen3:8b not available; "
-            "set YANKA_RUN_SPIKES=1 and start Ollama"
-        )
+        pytest.skip("Ollama with qwen3:8b not available; set YANKA_RUN_SPIKES=1 and start Ollama")

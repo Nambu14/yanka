@@ -24,7 +24,18 @@ yanka
 ```
 
 On first run, yanka initializes your data directory (default `~/.yanka`) and
-walks through provider/key setup.
+walks through provider/key setup. The wizard sets `llm.provider` and the
+default `llm.model` for that provider (fast/cheap tier, similar to
+`gpt-4o-mini`):
+
+| Provider | Default model |
+|----------|----------------|
+| Claude | `claude-3-5-haiku-latest` |
+| OpenAI | `gpt-4o-mini` |
+| Google | `gemini-2.0-flash-lite` |
+| Ollama | `llama3.2:3b` |
+
+Change models in `config.yaml` or inspect effective values with `/config`.
 
 ## Data layout
 

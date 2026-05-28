@@ -13,9 +13,7 @@ def _hit(
     *,
     status: str = RecordStatus.ACTIVE.value,
     record_date: date = date(2026, 5, 14),
-    sources: frozenset[RetrievalSource] = frozenset(
-        {RetrievalSource.GRAPH, RetrievalSource.VECTOR}
-    ),
+    sources: frozenset[RetrievalSource] = frozenset({RetrievalSource.GRAPH, RetrievalSource.VECTOR}),
 ) -> MergedRetrievalHit:
     return MergedRetrievalHit(
         file_reference=file_reference,
@@ -30,10 +28,7 @@ def _hit(
 
 
 def test_extract_citations_from_source_parentheses() -> None:
-    answer = (
-        "Sessions use PostgreSQL (source: current.md). "
-        "Redis is historical (source: old.md, current.md)."
-    )
+    answer = "Sessions use PostgreSQL (source: current.md). Redis is historical (source: old.md, current.md)."
 
     assert extract_citations(answer) == ["current.md", "old.md"]
 

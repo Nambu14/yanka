@@ -36,12 +36,7 @@ def test_lancedb_vector_search_and_filter(tmp_path) -> None:
     hits = table.search(np.array(anchor, dtype=np.float32)).limit(1).to_list()
     assert hits[0]["file_reference"] == "records/a.md"
 
-    filtered = (
-        table.search(np.array(anchor, dtype=np.float32))
-        .where("status = 'active'")
-        .limit(10)
-        .to_list()
-    )
+    filtered = table.search(np.array(anchor, dtype=np.float32)).where("status = 'active'").limit(10).to_list()
     refs = {r["file_reference"] for r in filtered}
     assert refs == {"records/a.md", "records/b.md"}
     assert "records/c.md" not in refs

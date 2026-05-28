@@ -150,10 +150,7 @@ def _candidate_from_vector_hit(hit: dict[str, Any]) -> ConflictCandidate:
     content = hit.get("content")
     source_file = hit.get("source_file")
     status = hit.get("status")
-    if not all(
-        isinstance(value, str)
-        for value in (claim_id, content, source_file, status)
-    ):
+    if not all(isinstance(value, str) for value in (claim_id, content, source_file, status)):
         msg = "vector hit missing required claim fields"
         raise ValueError(msg)
     return ConflictCandidate(

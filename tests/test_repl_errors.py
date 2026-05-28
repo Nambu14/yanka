@@ -10,7 +10,8 @@ from yanka.ingest.conflict_confirmation import (
     confirm_detected_conflicts,
 )
 from yanka.ingest.conflict_evaluation import DetectedConflict
-from yanka.ingest.pipeline import IngestAbortError
+from yanka.ingest.duplicate_claims import DuplicateClaimMatch
+from yanka.ingest.pipeline import IngestAbortError, IngestDuplicateRecordError
 from yanka.ingest.pipeline_stages import PipelineStage
 from yanka.llm.client import (
     LlmAuthError,
@@ -86,6 +87,37 @@ def test_format_user_error_ingest_abort() -> None:
 
     assert "could not be written" in lines[0].lower()
     assert "disk full" not in "\n".join(lines).lower()
+
+
+def test_format_user_error_duplicate_record_lists_files_without_resume_hint() -> None:
+    exc = IngestDuplicateRecordError(
+        "every claim is already on file",
+        duplicate_claims=[
+            DuplicateClaimMatch(
+                new_claim_id="c1",
+                new_content="A",
+                existing_claim_id="records/old.md:c1",
+                existing_content="A",
+                existing_file="records/old.md",
+                distance=0.0,
+            ),
+            DuplicateClaimMatch(
+                new_claim_id="c2",
+                new_content="B",
+                existing_claim_id="records/old.md:c2",
+                existing_content="B",
+                existing_file="records/old.md",
+                distance=0.0,
+            ),
+        ],
+    )
+
+    lines = format_user_error(exc, command="log")
+    text = "\n".join(lines)
+
+    assert "Nothing new to record" in lines[0]
+    assert "records/old.md" in text
+    assert "/resume" not in text
 
 
 def test_repl_conflict_prompt_treats_abort_as_no() -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -79,7 +80,10 @@ def prompt_log_user(
     *,
     input_fn: PromptFn,
     output_fn: OutputFn,
+    before_prompt: Callable[[], None] | None = None,
 ) -> str:
+    if before_prompt is not None:
+        before_prompt()
     if looks_like_json_payload(assistant_message):
         output_fn("Model returned structured JSON early; finalizing record...")
         return "CONVERSATION ENDED. Output ONLY the final record now — no questions."
@@ -98,7 +102,10 @@ def ask_log_user(
     *,
     input_fn: PromptFn,
     output_fn: OutputFn,
+    before_prompt: Callable[[], None] | None = None,
 ) -> str:
+    if before_prompt is not None:
+        before_prompt()
     output_fn("")
     output_fn(question)
     return input_fn("  Your answer: ")

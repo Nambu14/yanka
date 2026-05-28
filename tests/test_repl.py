@@ -164,8 +164,8 @@ def test_repl_config_command(tmp_path: Path) -> None:
 
     joined = "\n".join(output)
     assert f"Config file: {paths.config_path}" in joined
-    assert "api_key (claude): not set" in joined
-    assert "provider: claude" in joined
+    assert "api_key (openai): not set" in joined
+    assert "provider: openai" in joined
 
 
 def test_repl_log_requires_confirmation_when_pending_exists(tmp_path: Path) -> None:
@@ -184,9 +184,7 @@ def test_repl_log_requires_confirmation_when_pending_exists(tmp_path: Path) -> N
 
     def fake_runner(raw_dump, _paths, **_kwargs):
         calls.append(raw_dump)
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "x.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "x.md"))
 
     run_repl(paths, input_fn=input_fn, output_fn=output.append, log_runner=fake_runner)
 
@@ -211,9 +209,7 @@ def test_repl_log_discards_pending_when_confirmed(tmp_path: Path) -> None:
 
     def fake_runner(raw_dump, _paths, **_kwargs):
         calls.append(raw_dump)
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "x.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "x.md"))
 
     run_repl(paths, input_fn=input_fn, output_fn=output.append, log_runner=fake_runner)
 
@@ -332,9 +328,7 @@ def test_resume_command_runs_runner_and_clears_pending(tmp_path: Path) -> None:
 
     def fake_runner(raw_dump, _paths, **kwargs):
         calls.append((raw_dump, kwargs["messages"]))
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "resumed.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "resumed.md"))
 
     result = run_resume_command(
         paths,
@@ -420,9 +414,7 @@ def test_log_command_uses_note_reader_when_provided(tmp_path: Path) -> None:
 
     def fake_runner(raw_dump, _paths, **_kwargs):
         calls.append(raw_dump)
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "x.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "x.md"))
 
     run_log_command(
         paths,
@@ -467,7 +459,7 @@ def test_log_command_calls_ingest_runner_and_reports_saved_path(tmp_path: Path) 
     assert "output_fn" in calls[0][2]
     assert "Running ingest pipeline..." in output
     assert "· searching for related records..." in output
-    assert "· extracting claims..." in output
+    assert "· structuring decision record..." in output
     assert "· checking for conflicts..." in output
     assert "· writing record..." in output
     assert "on_stage" in calls[0][2]
@@ -486,9 +478,7 @@ def test_repl_log_dispatch_uses_injected_runner(tmp_path: Path) -> None:
 
     def fake_runner(raw_dump, _paths, **_kwargs):
         calls.append(raw_dump)
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "x.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "x.md"))
 
     run_repl(
         paths,
@@ -512,9 +502,7 @@ def test_repl_log_inline_dispatch_uses_injected_runner(tmp_path: Path) -> None:
 
     def fake_runner(raw_dump, _paths, **_kwargs):
         calls.append(raw_dump)
-        return SimpleNamespace(
-            write_result=SimpleNamespace(path=paths.records_dir / "x.md")
-        )
+        return SimpleNamespace(write_result=SimpleNamespace(path=paths.records_dir / "x.md"))
 
     run_repl(
         paths,
@@ -549,10 +537,7 @@ def test_log_command_handles_failed_extraction(tmp_path: Path) -> None:
 
     assert result is None
     assert "Could not turn this session into a complete record." in output
-    assert (
-        "Nothing was saved. Try /log again with a shorter summary or more context."
-        in output
-    )
+    assert "Nothing was saved. Try /log again with a shorter summary or more context." in output
     assert "Last model reply:" in output
     assert "I still need more details." in output
 
@@ -565,10 +550,21 @@ def test_log_prompt_auto_finalizes_on_json_blob(tmp_path: Path) -> None:
         output_fn=output.append,
     )
 
-    assert (
-        reply == "CONVERSATION ENDED. Output ONLY the final record now — no questions."
-    )
+    assert reply == "CONVERSATION ENDED. Output ONLY the final record now — no questions."
     assert "Model returned structured JSON early; finalizing record..." in output
+
+
+def test_prompt_log_user_calls_before_prompt_hook() -> None:
+    calls: list[str] = []
+
+    _prompt_log_user(
+        "What alternatives were considered?",
+        input_fn=lambda _prompt: "None — time pressure.",
+        output_fn=lambda _line: None,
+        before_prompt=lambda: calls.append("paused"),
+    )
+
+    assert calls == ["paused"]
 
 
 def test_ask_command_with_inline_question(tmp_path: Path) -> None:
@@ -660,10 +656,7 @@ def test_ask_command_prints_stale_index_warning(tmp_path: Path) -> None:
                 stale_sources=[],
                 has_staleness_warning=False,
             ),
-            warnings=[
-                "Some indexed records are missing on disk; "
-                "run /rebuild to refresh indexes."
-            ],
+            warnings=["Some indexed records are missing on disk; run /rebuild to refresh indexes."],
         )
 
     run_ask_command(
@@ -674,9 +667,7 @@ def test_ask_command_prints_stale_index_warning(tmp_path: Path) -> None:
         display_answer=lambda retrieval, out: out(retrieval.answer),
     )
 
-    assert any(
-        "Warning: Some indexed records are missing on disk;" in line for line in output
-    )
+    assert any("Warning: Some indexed records are missing on disk;" in line for line in output)
 
 
 def test_ask_command_empty_question_does_not_run_pipeline(tmp_path: Path) -> None:

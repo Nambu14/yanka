@@ -18,11 +18,7 @@ def format_status(paths: DataPaths) -> str:
         return "\n".join(lines)
 
     projects = sorted(
-        {
-            record_file.record.context_path[0]
-            for record_file in records
-            if record_file.record.context_path
-        }
+        {record_file.record.context_path[0] for record_file in records if record_file.record.context_path}
     )
     if projects:
         lines.append(f"Projects: {', '.join(projects)}")
@@ -44,10 +40,7 @@ def format_history(paths: DataPaths, *, limit: int = 5) -> str:
     lines: list[str] = []
     for record_file in records[:limit]:
         record = record_file.record
-        lines.append(
-            f"{record.date.isoformat()}  {record.status.value}  "
-            f"{record_file.path.name}  {record.decision}"
-        )
+        lines.append(f"{record.date.isoformat()}  {record.status.value}  {record_file.path.name}  {record.decision}")
     return "\n".join(lines)
 
 
@@ -63,8 +56,7 @@ def format_last(paths: DataPaths) -> str:
     latest = records[0]
     record = latest.record
     return (
-        f"{record.date.isoformat()}  {record.status.value}  {latest.path.name}  "
-        f"{record.decision}\nPath: {latest.path}"
+        f"{record.date.isoformat()}  {record.status.value}  {latest.path.name}  {record.decision}\nPath: {latest.path}"
     )
 
 

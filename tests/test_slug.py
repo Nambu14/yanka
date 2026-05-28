@@ -33,9 +33,7 @@ def _record(
 
 
 def test_slugify_decision_basic() -> None:
-    assert slugify_decision("Drop Redis for session storage") == (
-        "drop-redis-for-session-storage"
-    )
+    assert slugify_decision("Drop Redis for session storage") == ("drop-redis-for-session-storage")
 
 
 def test_slugify_text_fallback_for_empty() -> None:
@@ -47,10 +45,7 @@ def test_record_filename_includes_project_and_decision() -> None:
         decision="Use local Ollama for testing",
         context_path=["main-platform", "auth-service"],
     )
-    assert (
-        record_filename(record)
-        == "2026-05-18-main-platform-use-local-ollama-for-testing.md"
-    )
+    assert record_filename(record) == "2026-05-18-main-platform-use-local-ollama-for-testing.md"
 
 
 def test_same_decision_different_projects_get_different_names() -> None:
@@ -77,9 +72,7 @@ def test_unique_record_path_extends_context_before_numeric_suffix(
     first.write_text("existing")
 
     second = unique_record_path(records_dir, record)
-    assert second.name == (
-        "2026-05-18-main-platform-auth-service-use-local-ollama.md"
-    )
+    assert second.name == ("2026-05-18-main-platform-auth-service-use-local-ollama.md")
 
     second.write_text("existing")
 

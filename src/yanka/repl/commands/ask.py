@@ -41,17 +41,13 @@ def run_ask_command(
         return None
 
     output("Searching knowledge base...")
-    activity = start_activity(
-        output, retrieval_stage_label(RetrievalActivityStage.ANALYZING)
-    )
+    activity = start_activity(output, retrieval_stage_label(RetrievalActivityStage.ANALYZING))
 
     def on_stage(stage: RetrievalActivityStage) -> None:
         activity.update(retrieval_stage_label(stage))
 
     runner = ask_runner if ask_runner is not None else run_live_ask
-    show_answer = (
-        display_answer if display_answer is not None else display_retrieval_answer
-    )
+    show_answer = display_answer if display_answer is not None else display_retrieval_answer
     try:
         result = runner(user_question, paths, on_stage=on_stage)
     except LlmError as exc:

@@ -147,10 +147,7 @@ def test_extraction_loop_retries_invalid_json_then_succeeds() -> None:
     assert record.decision.startswith("Standardize sampling-rate")
     assert len(calls) == 4
     retry_user_texts = [m["content"] for m in calls[3] if m["role"] == "user"]
-    assert any(
-        "previous response did not validate" in text
-        for text in retry_user_texts
-    )
+    assert any("previous response did not validate" in text for text in retry_user_texts)
 
 
 def test_extraction_loop_raises_after_failed_json_finalization() -> None:

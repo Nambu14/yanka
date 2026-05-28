@@ -22,9 +22,7 @@ litellm_exceptions = pytest.importorskip("litellm.exceptions")
 
 
 def _fake_response(text: str = "assistant reply") -> SimpleNamespace:
-    return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=text))]
-    )
+    return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=text))])
 
 
 def _fake_tool_response(arguments: str) -> SimpleNamespace:
@@ -33,11 +31,7 @@ def _fake_tool_response(arguments: str) -> SimpleNamespace:
             SimpleNamespace(
                 message=SimpleNamespace(
                     content=None,
-                    tool_calls=[
-                        SimpleNamespace(
-                            function=SimpleNamespace(arguments=arguments)
-                        )
-                    ],
+                    tool_calls=[SimpleNamespace(function=SimpleNamespace(arguments=arguments))],
                 )
             )
         ]
@@ -135,7 +129,7 @@ def test_send_messages_empty_messages_raises() -> None:
 def test_send_messages_missing_litellm_raises() -> None:
     with patch(
         "yanka.llm.client._call_litellm",
-        side_effect=LlmError('[llm] litellm is not installed'),
+        side_effect=LlmError("[llm] litellm is not installed"),
     ):
         with pytest.raises(LlmError, match=r"\[llm\] litellm is not installed"):
             send_messages(

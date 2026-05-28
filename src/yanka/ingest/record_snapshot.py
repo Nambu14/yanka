@@ -14,9 +14,7 @@ def record_to_snapshot(record: Record) -> dict[str, Any]:
     """Build a JSON-serializable dict for ``pending_log_session.json``."""
     data = record_to_frontmatter_dict(record)
     data["date"] = record.date.isoformat()
-    data["body"] = {
-        field: getattr(record.body, field) for field in BODY_FIELDS
-    }
+    data["body"] = {field: getattr(record.body, field) for field in BODY_FIELDS}
     return data
 
 

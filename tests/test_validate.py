@@ -59,11 +59,7 @@ def test_bare_fences_not_complete() -> None:
 
 def test_extract_complete_record_with_preamble_and_trailing_prose() -> None:
     core = _read("valid-decision.md")
-    wrapped = (
-        "Great, here is the structured record:\n\n"
-        f"{core}\n\n"
-        "Let me know if you need anything else!\n"
-    )
+    wrapped = f"Great, here is the structured record:\n\n{core}\n\nLet me know if you need anything else!\n"
     extracted = extract_complete_record_text(wrapped)
     assert extracted is not None
     assert is_complete_record(wrapped) is True

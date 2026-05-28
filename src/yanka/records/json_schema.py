@@ -24,9 +24,7 @@ def _body_schema(*, strict: bool) -> dict[str, Any]:
     body: dict[str, Any] = {
         "type": "object",
         "additionalProperties": False,
-        "properties": {
-            field: {"type": ["string", "null"]} for field in BODY_FIELDS
-        },
+        "properties": {field: {"type": ["string", "null"]} for field in BODY_FIELDS},
     }
     if strict:
         body["required"] = list(BODY_FIELDS)

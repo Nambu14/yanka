@@ -13,16 +13,11 @@ def format_people(people: list[PersonSummary]) -> str:
     lines: list[str] = []
     for person in people:
         alias_text = ", ".join(person.aliases) if person.aliases else "—"
-        lines.append(
-            f"{person.name}  aliases: {alias_text}  decisions: {person.decision_count}"
-        )
+        lines.append(f"{person.name}  aliases: {alias_text}  decisions: {person.decision_count}")
     return "\n".join(lines)
 
 
 def format_projects(projects: list[ProjectSummary]) -> str:
     if not projects:
         return f"No projects in the graph yet. {_EMPTY_GRAPH_HINT}"
-    return "\n".join(
-        f"{project.canonical_name}  records: {project.decision_count}"
-        for project in projects
-    )
+    return "\n".join(f"{project.canonical_name}  records: {project.decision_count}" for project in projects)

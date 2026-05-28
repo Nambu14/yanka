@@ -19,30 +19,32 @@ from yanka.records.models import Claim, Record, RecordBody, claims_from_json
 
 AMBER_COVERAGE_WARNING = "Claim coverage may be incomplete."
 
-_STOPWORDS = frozenset({
-    "a",
-    "an",
-    "and",
-    "are",
-    "as",
-    "at",
-    "be",
-    "by",
-    "for",
-    "from",
-    "in",
-    "is",
-    "it",
-    "of",
-    "on",
-    "or",
-    "our",
-    "the",
-    "to",
-    "was",
-    "were",
-    "with",
-})
+_STOPWORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "for",
+        "from",
+        "in",
+        "is",
+        "it",
+        "of",
+        "on",
+        "or",
+        "our",
+        "the",
+        "to",
+        "was",
+        "were",
+        "with",
+    }
+)
 
 
 class ClaimValidationIssue(StrEnum):
@@ -130,9 +132,7 @@ def _retry_appendix(record: Record, issues: list[ClaimValidationIssue]) -> str:
     if ClaimValidationIssue.EMPTY in issues:
         lines.append("Return at least one atomic claim.")
     if ClaimValidationIssue.COVERAGE in issues:
-        lines.append(
-            "At least one claim must reflect the core decision assertion above."
-        )
+        lines.append("At least one claim must reflect the core decision assertion above.")
     return "\n".join(lines)
 
 

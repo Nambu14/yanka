@@ -402,6 +402,17 @@ Configured by `src/yanka/app_logging.py`:
 - Effective config is read from `<data_dir>/config.yaml` (see spec §6) by
   `src/yanka/config.py`. The `/config` REPL command renders the effective
   values for inspection.
+- First-run setup (`src/yanka/setup.py`) sets `llm.provider` and the default
+  `llm.model` for that provider via `DEFAULT_LLM_MODEL_BY_PROVIDER` in
+  `config.py` (fast/cheap tier, ~`gpt-4o-mini` class):
+
+  | Provider | Default model |
+  |----------|----------------|
+  | `claude` | `claude-3-5-haiku-latest` |
+  | `openai` | `gpt-4o-mini` |
+  | `google` | `gemini-2.0-flash-lite` |
+  | `ollama` | `llama3.2:3b` |
+
 - API keys are *never* in `config.yaml`. They live in the OS keychain
   (`keyring`), with environment variables as a fallback. Handled by
   `src/yanka/secrets.py`.

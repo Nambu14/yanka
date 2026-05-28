@@ -87,8 +87,7 @@ def apply_confirmed_supersedes(
         return list(claims)
 
     supersede_by_new_id = {
-        conflict.new_claim_id: parse_existing_claim_id(conflict.existing_claim_id)
-        for conflict in confirmed
+        conflict.new_claim_id: parse_existing_claim_id(conflict.existing_claim_id) for conflict in confirmed
     }
     updated: list[Claim] = []
     for claim in claims:

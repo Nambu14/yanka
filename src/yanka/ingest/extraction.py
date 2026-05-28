@@ -39,6 +39,7 @@ You MUST output ONLY one final JSON record now.
 
 {record_template}"""
 
+
 class RecordExtractionError(LlmError):
     """Record extraction did not produce a complete record after wrap-up."""
 
@@ -176,13 +177,8 @@ def _continue_record_extraction(
     max_rounds = _max_clarifying_rounds(paths)
     assistant_count = sum(1 for item in messages if item.get("role") == "assistant")
     for round_index in range(assistant_count, max_rounds):
-        if (
-            round_index == 1
-            and not any(
-                item.get("role") == "user"
-                and item.get("content") == FINAL_CLARIFYING_ROUND_NUDGE
-                for item in messages
-            )
+        if round_index == 1 and not any(
+            item.get("role") == "user" and item.get("content") == FINAL_CLARIFYING_ROUND_NUDGE for item in messages
         ):
             messages.append({"role": "user", "content": FINAL_CLARIFYING_ROUND_NUDGE})
         response = send(messages, paths=paths, config=config)

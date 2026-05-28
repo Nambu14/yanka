@@ -30,10 +30,23 @@ def test_round_trip_valid_decision() -> None:
 def test_round_trip_clarifying_exchange() -> None:
     original = parse_record(_read("valid-decision.md"))
     original.body.clarifying_exchange = (
-        "### Round 1\n\n**Assistant:**\nTimeline?\n\n**User:**\nOne sprint"
+        "### Round 1\n\n**Assistant:**\nTimeline?\n\n**User:**\n1. One sprint\n2. No budget yet"
     )
     restored = parse_record(record_to_markdown(original))
 
+    assert restored.body.clarifying_exchange == original.body.clarifying_exchange
+
+
+def test_raw_input_and_clarifying_use_fenced_blocks() -> None:
+    original = parse_record(_read("valid-decision.md"))
+    original.body.raw_input = "1. dropped idea\n2. chosen path"
+    original.body.clarifying_exchange = "**User:**\n1. yes\n2. no"
+    markdown = record_to_markdown(original)
+
+    assert "```text" in markdown
+    assert "> 1." not in markdown
+    restored = parse_record(markdown)
+    assert restored.body.raw_input == original.body.raw_input
     assert restored.body.clarifying_exchange == original.body.clarifying_exchange
 
 
@@ -59,10 +72,11 @@ def test_top_fence_only_body_may_contain_horizontal_rules() -> None:
     from yanka.records.frontmatter import split_markdown
 
     record = parse_record(_read("valid-decision.md"))
-    record.body.raw_input = "> line with --- inside\n> ---"
+    record.body.raw_input = "line with --- inside\n---"
     markdown = record_to_markdown(record)
 
     frontmatter, body = split_markdown(markdown)
     assert frontmatter is not None
     assert "---" in body
     assert "line with --- inside" in body
+    assert "```text" in body

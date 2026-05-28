@@ -199,10 +199,7 @@ def _retry_messages(
         *messages,
         {
             "role": "user",
-            "content": (
-                "The previous response did not validate. "
-                f"Fix the JSON only. Error: {error}"
-            ),
+            "content": (f"The previous response did not validate. Fix the JSON only. Error: {error}"),
         },
     ]
 

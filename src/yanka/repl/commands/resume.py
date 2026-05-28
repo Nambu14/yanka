@@ -6,7 +6,7 @@ from typing import Any
 
 from yanka.app_logging import get_logger, log_exception
 from yanka.ingest.extraction import RecordExtractionError
-from yanka.ingest.pipeline import IngestAbortError
+from yanka.ingest.pipeline import IngestAbortError, IngestDuplicateRecordError
 from yanka.ingest.pipeline_stages import PipelineStage
 from yanka.ingest.resume_state import (
     clear_pending_log_session,
@@ -46,10 +46,7 @@ def run_resume_command(
         clear_pending_log_session(paths)
         return None
 
-    output(
-        f"Resuming interrupted /log ({pending.stage.value}) "
-        f"from {pending.created_at}..."
-    )
+    output(f"Resuming interrupted /log ({pending.stage.value}) from {pending.created_at}...")
     runner = ingest_runner if ingest_runner is not None else _default_resume_runner
     try:
         result = runner(
@@ -73,6 +70,11 @@ def run_resume_command(
         if exc.last_assistant_response.strip():
             output("Last model reply:")
             output(format_last_model_reply(exc.last_assistant_response))
+        return None
+    except IngestDuplicateRecordError as exc:
+        log_exception(_LOGGER, "resume skipped duplicates", exc, command="resume")
+        clear_pending_log_session(paths)
+        emit_user_error(output, exc, command="resume")
         return None
     except IngestAbortError as exc:
         log_exception(_LOGGER, "resume ingest aborted", exc, command="resume")

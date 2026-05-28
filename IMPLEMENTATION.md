@@ -279,6 +279,7 @@ Full plan, review findings, and slice notes: **[`docs/phase-9-wrap-up.md`](docs/
 | 9.11b | Spec refresh (post-Phase-9 drift): §2 runtime/, §6 defaults, §7/§8 notes, §11 commands, §12 errors, §14 decisions | manual review | ✓ |
 | 9.11c | Lint sweep: `line-length = 120`, import order, `session_transcript` E402 | `ruff check src tests` | ✓ |
 | 9.12 | Live smoke (M6 exit) | `docs/live-m6-checklist.md` |
+| 9.13 | Per-claim duplicate guard (drop restated claims; raise `IngestDuplicateRecordError` when all duplicate) | `tests/test_duplicate_claims.py`, pipeline scenarios | ✓ |
 
 **Also covers (from original 9.x):** malformed record wrap-up (8.3d), index fail warn (6.1), no user tracebacks (9.3).
 

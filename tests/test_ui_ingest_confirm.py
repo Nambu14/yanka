@@ -5,6 +5,7 @@ from pathlib import Path
 
 from rich.console import Console
 
+from yanka.ingest.duplicate_claims import DuplicateClaimMatch
 from yanka.ingest.write import WriteResult
 from yanka.records.io import read_record
 from yanka.ui import confirmation_view_from_record, render_ingest_confirmation
@@ -66,6 +67,43 @@ def test_render_shows_index_warning_from_write_result() -> None:
 
     assert "yanka rebuild" in output
     assert "[vectors] embed failed" in output
+
+
+def test_render_uses_output_fn_when_provided() -> None:
+    record = read_record(FIXTURE).record
+    view = confirmation_view_from_record(record, path=Path("demo.md"))
+    lines: list[str] = []
+
+    render_ingest_confirmation(view, output_fn=lines.append)
+
+    joined = "\n".join(lines)
+    assert "Record saved" in joined
+    assert "demo.md" in joined
+
+
+def test_render_skipped_duplicate_claims_section() -> None:
+    record = read_record(FIXTURE).record
+    duplicates = [
+        DuplicateClaimMatch(
+            new_claim_id="c2",
+            new_content="Redis is not used for sessions",
+            existing_claim_id="records/2026-02-10-redis-session-store.md:c1",
+            existing_content="Redis is not used for sessions",
+            existing_file="records/2026-02-10-redis-session-store.md",
+            distance=0.0,
+        ),
+    ]
+    view = confirmation_view_from_record(
+        record,
+        path=Path("demo.md"),
+        duplicate_claims=duplicates,
+    )
+
+    output = _capture(view)
+
+    assert "Skipped (duplicates):" in output
+    assert "Redis is not used for sessions" in output
+    assert "records/2026-02-10-redis-session-store.md:c1" in output
 
 
 def test_confirmation_view_collects_extra_warnings() -> None:

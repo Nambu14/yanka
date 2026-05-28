@@ -23,14 +23,10 @@ def _read_dump(argument: str | None) -> str:
         text = sys.stdin.read().strip()
         if text:
             return text
-    raise click.UsageError(
-        "Provide a brain dump as an argument or pipe text on stdin."
-    )
+    raise click.UsageError("Provide a brain dump as an argument or pipe text on stdin.")
 
 
-_WRAP_UP_NUDGE = (
-    "CONVERSATION ENDED. Output ONLY the final record now — no questions."
-)
+_WRAP_UP_NUDGE = "CONVERSATION ENDED. Output ONLY the final record now — no questions."
 
 
 def _prompt_user(assistant_message: str) -> str:
@@ -114,9 +110,7 @@ def _report_result(result) -> None:
     click.echo()
     click.echo(f"Saved: {result.write_result.path}")
     if result.confirmed_conflicts:
-        click.echo(
-            f"Confirmed {len(result.confirmed_conflicts)} supersession(s)."
-        )
+        click.echo(f"Confirmed {len(result.confirmed_conflicts)} supersession(s).")
 
 
 if __name__ == "__main__":

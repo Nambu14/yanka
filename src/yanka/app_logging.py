@@ -24,9 +24,7 @@ def configure_app_logging(paths: DataPaths) -> Path:
     logger.propagate = False
 
     for handler in logger.handlers:
-        if isinstance(handler, RotatingFileHandler) and _handler_points_to(
-            handler, log_path
-        ):
+        if isinstance(handler, RotatingFileHandler) and _handler_points_to(handler, log_path):
             return log_path
 
     handler = RotatingFileHandler(
@@ -62,9 +60,7 @@ def log_exception(
 ) -> None:
     """Log an exception with traceback and structured context."""
     if context:
-        context_text = " ".join(
-            f"{key}={value!r}" for key, value in sorted(context.items())
-        )
+        context_text = " ".join(f"{key}={value!r}" for key, value in sorted(context.items()))
         logger.error("%s | %s", message, context_text, exc_info=exc)
         return
     logger.error("%s", message, exc_info=exc)

@@ -40,9 +40,7 @@ def test_rebuild_command(tmp_path: Path) -> None:
     config = default_config(paths.data_dir)
     config.embedding = EmbeddingConfig(provider="test", model="fake")
     save_config(paths, config)
-    record = read_record(
-        Path(__file__).parent / "fixtures" / "records" / "with-claims.md"
-    ).record
+    record = read_record(Path(__file__).parent / "fixtures" / "records" / "with-claims.md").record
     write_record(paths, record, filename="with-claims.md")
 
     result = CliRunner().invoke(main, ["--data-dir", str(tmp_path), "rebuild"])

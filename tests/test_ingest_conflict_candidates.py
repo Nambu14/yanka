@@ -163,9 +163,7 @@ def test_find_conflict_candidates_graph_only(graph, paths) -> None:
 
 def test_find_conflict_candidates_vector_only(graph, paths) -> None:
     indexed = _indexed_vector_record(paths)
-    new_claims = [
-        Claim(id="c1", content="PostgreSQL session storage", status=ClaimStatus.ACTIVE)
-    ]
+    new_claims = [Claim(id="c1", content="PostgreSQL session storage", status=ClaimStatus.ACTIVE)]
 
     candidates = find_conflict_candidates(
         new_claims,

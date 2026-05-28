@@ -85,6 +85,10 @@ def _integration_embed(
             vectors.append([1.0] + [0.0] * (EMBEDDING_DIM - 1))
         elif "redis" in lower:
             vectors.append([0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 2))
+        elif "15 minutes" in lower:
+            vectors.append([0.0, 0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 3))
+        elif "30 minutes" in lower:
+            vectors.append([0.0, 0.0, 0.0, 1.0] + [0.0] * (EMBEDDING_DIM - 4))
         else:
             vectors.append([0.0] * EMBEDDING_DIM)
     return vectors
@@ -186,9 +190,7 @@ def test_conflict_supersession_creates_graph_edge(paths, graph) -> None:
             "reason": "overlap",
         }
     ]
-    conflict_claims = [
-        {"id": "c1", "content": "Token lifetime is 30 minutes", "status": "active"}
-    ]
+    conflict_claims = [{"id": "c1", "content": "Token lifetime is 30 minutes", "status": "active"}]
     candidate = ConflictCandidate(
         claim_id="records/2026-03-02-jwt-auth.md:c2",
         content="Token lifetime is 15 minutes",
@@ -197,9 +199,7 @@ def test_conflict_supersession_creates_graph_edge(paths, graph) -> None:
         source=RetrievalSource.GRAPH,
     )
 
-    with patch(
-        "yanka.ingest.pipeline.find_conflict_candidates", return_value=[candidate]
-    ):
+    with patch("yanka.ingest.pipeline.find_conflict_candidates", return_value=[candidate]):
         result = run_ingest_pipeline(
             "JWT tokens now last 30 minutes",
             paths,
@@ -239,9 +239,7 @@ def test_ask_happy_path_returns_answer_and_citations(paths) -> None:
             "semantic_query": "session storage",
             "graph_hint": "Find auth decisions",
         },
-        fetch_text=lambda _messages, **_kwargs: (
-            "Sessions are stored in PostgreSQL (source: with-claims.md)."
-        ),
+        fetch_text=lambda _messages, **_kwargs: "Sessions are stored in PostgreSQL (source: with-claims.md).",
     )
 
     assert "PostgreSQL" in result.answer
@@ -321,9 +319,7 @@ def test_index_fail_after_write_keeps_file_and_warning(paths, graph) -> None:
         body=RecordBody(raw_input="integration"),
     )
 
-    with patch(
-        "yanka.ingest.write.index_record", side_effect=RuntimeError("vector fail")
-    ):
+    with patch("yanka.ingest.write.index_record", side_effect=RuntimeError("vector fail")):
         result = write_ingested_record(
             paths,
             record,

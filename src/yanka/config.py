@@ -8,14 +8,45 @@ import yaml
 
 from yanka.paths import DEFAULT_DATA_DIR, DataPaths, _expand
 
-DEFAULT_LLM_MODEL = "claude-sonnet-4-20250514"
 DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# Default chat model per ``llm.provider`` — fast/cheap tier (~gpt-4o-mini class).
+DEFAULT_LLM_MODEL_BY_PROVIDER: dict[str, str] = {
+    "claude": "claude-3-5-haiku-latest",
+    "openai": "gpt-4o-mini",
+    "google": "gemini-2.0-flash-lite",
+    "ollama": "llama3.2:3b",
+}
+
+DEFAULT_LLM_MODEL = DEFAULT_LLM_MODEL_BY_PROVIDER["claude"]
+
 
 @dataclass
 class LlmConfig:
     provider: str = "claude"
     model: str = DEFAULT_LLM_MODEL
     endpoint: str | None = None
+
+
+def default_model_for_provider(provider: str) -> str:
+    """Return the default model string for a configured LLM provider."""
+    key = provider.lower()
+    try:
+        return DEFAULT_LLM_MODEL_BY_PROVIDER[key]
+    except KeyError as exc:
+        known = ", ".join(sorted(DEFAULT_LLM_MODEL_BY_PROVIDER))
+        msg = f"unknown LLM provider {provider!r}; known: {known}"
+        raise ValueError(msg) from exc
+
+
+def default_llm_config(provider: str = "claude") -> LlmConfig:
+    """Build ``LlmConfig`` with the default model for the given provider."""
+    key = provider.lower()
+    return LlmConfig(
+        provider=key,
+        model=default_model_for_provider(key),
+        endpoint=None,
+    )
 
 
 @dataclass
@@ -29,6 +60,9 @@ class ExtractionConfig:
     max_rounds: int = 2
     conflict_search_limit: int = 10
     context_search_limit: int = 5
+    # LanceDB L2 distance threshold for per-claim duplicate detection.
+    # Lower = stricter. 0.15 matches near-identical claims only.
+    duplicate_claim_max_distance: float = 0.15
 
 
 @dataclass
@@ -42,7 +76,7 @@ class YankaConfig:
 def default_config(data_dir: Path | None = None) -> YankaConfig:
     root = _expand(data_dir if data_dir is not None else DEFAULT_DATA_DIR)
     return YankaConfig(
-        llm=LlmConfig(),
+        llm=default_llm_config("openai"),
         embedding=EmbeddingConfig(),
         extraction=ExtractionConfig(),
         data_dir=root,
@@ -62,9 +96,7 @@ def load_config(paths: DataPaths) -> YankaConfig:
 def save_config(paths: DataPaths, config: YankaConfig) -> None:
     paths.config_path.parent.mkdir(parents=True, exist_ok=True)
     payload = _config_to_dict(config)
-    paths.config_path.write_text(
-        yaml.safe_dump(payload, sort_keys=False, default_flow_style=False)
-    )
+    paths.config_path.write_text(yaml.safe_dump(payload, sort_keys=False, default_flow_style=False))
 
 
 def _config_from_dict(raw: dict[str, Any], fallback_data_dir: Path) -> YankaConfig:

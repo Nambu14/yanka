@@ -28,10 +28,7 @@ def get_vector_db(paths: DataPaths | None = None) -> Any:
     try:
         import lancedb
     except ImportError as exc:
-        msg = (
-            "lancedb is not installed. "
-            'Install with: pip install -e ".[vectors]" or pip install -e ".[spike]"'
-        )
+        msg = 'lancedb is not installed. Install with: pip install -e ".[vectors]" or pip install -e ".[spike]"'
         raise VectorStoreError(msg) from exc
 
     db = lancedb.connect(key)

@@ -146,10 +146,7 @@ def _get_litellm() -> Any:
     try:
         import litellm
     except ImportError as exc:
-        msg = (
-            "[llm] litellm is not installed. "
-            'Install with: pip install -e ".[llm]" or pip install -e ".[spike]"'
-        )
+        msg = '[llm] litellm is not installed. Install with: pip install -e ".[llm]" or pip install -e ".[spike]"'
         raise LlmError(msg) from exc
 
     _configure_litellm_runtime(litellm)

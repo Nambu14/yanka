@@ -6,7 +6,7 @@ from typing import Any
 
 from yanka.app_logging import get_logger, log_exception
 from yanka.ingest.extraction import RecordExtractionError
-from yanka.ingest.pipeline import IngestAbortError
+from yanka.ingest.pipeline import IngestAbortError, IngestDuplicateRecordError
 from yanka.ingest.pipeline_stages import PipelineStage
 from yanka.ingest.resume_state import (
     clear_pending_log_session,
@@ -53,6 +53,10 @@ def run_log_command(
     def on_stage(stage: IngestActivityStage) -> None:
         activity.update(ingest_stage_label(stage))
 
+    def pause_activity_for_panel() -> None:
+        activity.stop()
+        output("")
+
     runner = ingest_runner if ingest_runner is not None else _default_log_runner
     try:
         result = runner(
@@ -61,6 +65,8 @@ def run_log_command(
             input_fn=prompt,
             output_fn=output,
             on_stage=on_stage,
+            before_blocking_prompt=pause_activity_for_panel,
+            before_confirmation=pause_activity_for_panel,
         )
     except RecordExtractionError as exc:
         log_exception(_LOGGER, "log extraction incomplete", exc, command="log")
@@ -72,13 +78,17 @@ def run_log_command(
         )
         activity.stop()
         output("Could not turn this session into a complete record.")
-        output(
-            "Nothing was saved. Try /log again with a shorter summary or more context."
-        )
+        output("Nothing was saved. Try /log again with a shorter summary or more context.")
         if exc.last_assistant_response.strip():
             output("Last model reply:")
             output(format_last_model_reply(exc.last_assistant_response))
         output("Your progress is saved — run /resume to continue.")
+        return None
+    except IngestDuplicateRecordError as exc:
+        log_exception(_LOGGER, "log ingest skipped duplicates", exc, command="log")
+        clear_pending_log_session(paths)
+        activity.stop()
+        emit_user_error(output, exc, command="log")
         return None
     except IngestAbortError as exc:
         log_exception(_LOGGER, "log ingest aborted", exc, command="log")
@@ -131,4 +141,6 @@ def _default_log_runner(
         input_fn=input_fn,
         output_fn=output_fn,
         on_stage=on_stage,
+        before_blocking_prompt=kwargs.get("before_blocking_prompt"),
+        before_confirmation=kwargs.get("before_confirmation"),
     )

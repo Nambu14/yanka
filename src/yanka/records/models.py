@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from yanka.records.frontmatter import split_markdown
+from yanka.records.verbatim import unwrap_verbatim_section
 
 _SECTION_PATTERN = re.compile(r"^## (.+)$", re.MULTILINE)
 
@@ -139,20 +140,10 @@ def _parse_body(body: str) -> RecordBody:
         if field_name is None:
             continue
         text = content.strip() or None
-        if text is not None and field_name == "raw_input":
-            text = _unquote_raw_input(text)
+        if text is not None and field_name in {"raw_input", "clarifying_exchange"}:
+            text = unwrap_verbatim_section(text)
         kwargs[field_name] = text
     return RecordBody(**kwargs)
-
-
-def _unquote_raw_input(content: str) -> str:
-    lines: list[str] = []
-    for line in content.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith(">"):
-            stripped = stripped[1:].lstrip()
-        lines.append(stripped)
-    return "\n".join(lines).strip()
 
 
 def _split_sections(body: str) -> dict[str, str]:

@@ -129,10 +129,7 @@ def test_fetch_typed_json_falls_back_on_non_llm_provider_exception() -> None:
     def fake_send(_messages, **kwargs):
         calls.append(kwargs)
         if kwargs["response_format"]["type"] == "json_schema":
-            raise RuntimeError(
-                "Invalid schema for response_format 'yanka_record': "
-                "Missing 'rationale'."
-            )
+            raise RuntimeError("Invalid schema for response_format 'yanka_record': Missing 'rationale'.")
         return '{"name": "Rudy"}'
 
     data = fetch_typed_json(

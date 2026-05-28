@@ -32,9 +32,7 @@ def test_config_exists(tmp_path: Path) -> None:
     assert config_exists(paths)
 
 
-def test_run_first_run_writes_config_and_key(
-    tmp_path: Path, monkeypatch, mock_keyring
-) -> None:
+def test_run_first_run_writes_config_and_key(tmp_path: Path, monkeypatch, mock_keyring) -> None:
     monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
     bootstrap = resolve_data_paths()
     prompts = iter([str(tmp_path), "1", "sk-test-key"])
@@ -59,9 +57,7 @@ def test_run_first_run_writes_config_and_key(
     assert raw["data_dir"] == str(tmp_path)
 
 
-def test_run_first_run_skips_api_key_prompt_when_keyring_has_key(
-    tmp_path: Path, monkeypatch, mock_keyring
-) -> None:
+def test_run_first_run_skips_api_key_prompt_when_keyring_has_key(tmp_path: Path, monkeypatch, mock_keyring) -> None:
     monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
     mock_keyring[("yanka", "openai")] = "sk-from-keyring"
     bootstrap = resolve_data_paths()
@@ -79,14 +75,15 @@ def test_run_first_run_skips_api_key_prompt_when_keyring_has_key(
     )
 
     assert config.llm.provider == "openai"
+    assert config.llm.model == "gpt-4o-mini"
     assert get_api_key("openai") == "sk-from-keyring"
     assert not any("API key" in call for call in prompt_calls)
     assert paths.config_path.is_file()
+    raw = yaml.safe_load(paths.config_path.read_text())
+    assert raw["llm"]["model"] == "gpt-4o-mini"
 
 
-def test_run_first_run_allows_empty_api_key_when_env_set(
-    tmp_path: Path, monkeypatch, mock_keyring
-) -> None:
+def test_run_first_run_allows_empty_api_key_when_env_set(tmp_path: Path, monkeypatch, mock_keyring) -> None:
     monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
     monkeypatch.setenv("OPENAI_API_KEY", "sk-env")
     bootstrap = resolve_data_paths()
@@ -103,9 +100,7 @@ def test_run_first_run_allows_empty_api_key_when_env_set(
     assert paths.config_path.is_file()
 
 
-def test_run_first_run_skips_api_key_for_ollama(
-    tmp_path: Path, monkeypatch, mock_keyring
-) -> None:
+def test_run_first_run_skips_api_key_for_ollama(tmp_path: Path, monkeypatch, mock_keyring) -> None:
     monkeypatch.setenv(DATA_DIR_ENV_VAR, str(tmp_path))
     bootstrap = resolve_data_paths()
     prompts = iter([str(tmp_path), "4"])
@@ -117,12 +112,11 @@ def test_run_first_run_skips_api_key_for_ollama(
     )
 
     assert config.llm.provider == "ollama"
+    assert config.llm.model == "llama3.2:3b"
     assert get_api_key("ollama") is None
 
 
-def test_cli_runs_first_setup_when_no_config(
-    tmp_path: Path, monkeypatch, mock_keyring
-) -> None:
+def test_cli_runs_first_setup_when_no_config(tmp_path: Path, monkeypatch, mock_keyring) -> None:
     from click.testing import CliRunner
 
     from yanka.cli import main
@@ -141,5 +135,7 @@ def test_cli_runs_first_setup_when_no_config(
     assert result.exit_code == 0
     config_path = tmp_path / "config.yaml"
     assert config_path.is_file()
-    assert yaml.safe_load(config_path.read_text())["llm"]["provider"] == "openai"
+    raw = yaml.safe_load(config_path.read_text())
+    assert raw["llm"]["provider"] == "openai"
+    assert raw["llm"]["model"] == "gpt-4o-mini"
     assert get_api_key("openai") == "sk-openai"

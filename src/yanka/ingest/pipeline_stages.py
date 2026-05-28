@@ -11,6 +11,7 @@ class PipelineStage(StrEnum):
     EXTRACTION = "extraction"
     CLAIMS = "claims"
     ENTITY_RESOLUTION = "entity_resolution"
+    DUPLICATE_CLAIMS = "duplicate_claims"
     CONFLICT_EVALUATION = "conflict_evaluation"
     WRITING = "writing"
 
@@ -27,14 +28,11 @@ class PipelineStage(StrEnum):
 _POST_EXTRACTION_STAGES = (
     PipelineStage.CLAIMS,
     PipelineStage.ENTITY_RESOLUTION,
+    PipelineStage.DUPLICATE_CLAIMS,
     PipelineStage.CONFLICT_EVALUATION,
     PipelineStage.WRITING,
 )
 
 
-ENTITY_RESOLUTION_DEGRADE_WARNING = (
-    "Context resolution skipped (provider error); using new context nodes."
-)
-CONFLICT_EVALUATION_DEGRADE_WARNING = (
-    "Conflict check skipped (provider error); no conflicts assumed."
-)
+ENTITY_RESOLUTION_DEGRADE_WARNING = "Context resolution skipped (provider error); using new context nodes."
+CONFLICT_EVALUATION_DEGRADE_WARNING = "Conflict check skipped (provider error); no conflicts assumed."

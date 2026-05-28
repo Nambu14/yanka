@@ -206,9 +206,7 @@ def _resolve_segment(
         return _segment_slug_from_canonical(match), match
 
     if fetch_resolution is not None:
-        candidates = list_context_candidates(
-            graph, depth=depth, parent_canonical=parent_canonical
-        )
+        candidates = list_context_candidates(graph, depth=depth, parent_canonical=parent_canonical)
         if candidates:
             fetch = fetch_resolution
             resolved = _resolve_with_llm(

@@ -91,11 +91,7 @@ def test_index_claims_upsert_replaces_rows_for_record(tmp_path: Path) -> None:
 
     table = get_claims_table(paths)
     assert table.count_rows() == 2
-    row = (
-        table.search(np.array([1.0] + [0.0] * (EMBEDDING_DIM - 1), dtype=np.float32))
-        .limit(1)
-        .to_list()[0]
-    )
+    row = table.search(np.array([1.0] + [0.0] * (EMBEDDING_DIM - 1), dtype=np.float32)).limit(1).to_list()[0]
     assert row["content"] == "PostgreSQL holds all session state"
 
 

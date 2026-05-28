@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 import click
 
-from yanka.ingest.pipeline import IngestAbortError
+from yanka.ingest.pipeline import IngestAbortError, IngestDuplicateRecordError
 from yanka.llm.client import (
     LlmAuthError,
     LlmError,
@@ -20,6 +20,12 @@ _RESUME_HINT = "Your progress is saved — run /resume to continue."
 
 def format_user_error(exc: BaseException, *, command: str) -> list[str]:
     """Return user-facing lines for an error (no raw provider tracebacks)."""
+    if isinstance(exc, IngestDuplicateRecordError):
+        lines = ["Nothing new to record — every claim is already on file."]
+        for filename in exc.existing_files:
+            lines.append(f"  • {filename}")
+        return lines
+
     if isinstance(exc, IngestAbortError):
         lines = ["The record could not be written to disk."]
         if command == "log":

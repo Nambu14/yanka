@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from yanka.config import YankaConfig, default_config, save_config
+from yanka.config import YankaConfig, default_config, default_llm_config, save_config
 from yanka.paths import (
     DEFAULT_DATA_DIR,
     DataPaths,
@@ -85,12 +85,12 @@ def run_first_run(
             elif not get_api_key(provider):
                 echo(
                     "  No API key stored. Set OPENAI_API_KEY (etc.) or re-run "
-                    "setup after: python3 -c \"from yanka.secrets import set_api_key; "
+                    'setup after: python3 -c "from yanka.secrets import set_api_key; '
                     f"set_api_key('{provider}', 'sk-...')\""
                 )
 
     config = default_config(paths.data_dir)
-    config.llm.provider = provider
+    config.llm = default_llm_config(provider)
     save_config(paths, config)
 
     storage = _display_path(paths.data_dir)

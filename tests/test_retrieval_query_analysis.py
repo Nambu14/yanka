@@ -72,9 +72,7 @@ def test_person_fixture_parses_people() -> None:
 def test_query_analysis_from_json_time_range() -> None:
     raw = {
         "query_type": "exploratory",
-        "filters": {
-            "time_range": {"after": "2026-04-01", "before": "2026-05-01"}
-        },
+        "filters": {"time_range": {"after": "2026-04-01", "before": "2026-05-01"}},
         "semantic_query": "deployments",
         "graph_hint": "Recent deployment decisions",
     }

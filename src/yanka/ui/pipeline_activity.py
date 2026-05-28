@@ -12,6 +12,7 @@ class IngestActivityStage(StrEnum):
     SEARCHING = "searching"
     EXTRACTING = "extracting"
     VALIDATING = "validating"
+    DEDUPING = "deduping"
     CONFLICT_CHECK = "conflict-check"
     WRITING = "writing"
 
@@ -30,8 +31,9 @@ RetrievalOnStage = Callable[[RetrievalActivityStage], None]
 
 INGEST_STAGE_LABELS: dict[IngestActivityStage, str] = {
     IngestActivityStage.SEARCHING: "searching for related records...",
-    IngestActivityStage.EXTRACTING: "extracting claims...",
+    IngestActivityStage.EXTRACTING: "structuring decision record...",
     IngestActivityStage.VALIDATING: "validating claims...",
+    IngestActivityStage.DEDUPING: "checking for duplicate claims...",
     IngestActivityStage.CONFLICT_CHECK: "checking for conflicts...",
     IngestActivityStage.WRITING: "writing record...",
 }

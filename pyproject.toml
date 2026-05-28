@@ -72,5 +72,13 @@ target-version = "py312"
 line-length = 120
 src = ["src", "tests"]
 
+[tool.ruff.format]
+# Cypher/SQL live in multi-line string literals; the formatter breaks readable query layout.
+exclude = [
+    "src/yanka/graph/**",
+    "tests/test_graph*.py",
+    "tests/spikes/test_spike_ladybug.py",
+]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]

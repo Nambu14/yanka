@@ -88,9 +88,7 @@ def test_rebuild_indexes_populates_graph_and_vectors(tmp_path: Path) -> None:
     assert count == 2
     graph = get_graph_db(paths)
     init_graph_schema(graph)
-    assert graph.connection.execute(
-        "MATCH (d:Decision) RETURN count(*)"
-    ).get_all() == [[2]]
+    assert graph.connection.execute("MATCH (d:Decision) RETURN count(*)").get_all() == [[2]]
     assert get_records_table(paths).count_rows() == 2
 
 

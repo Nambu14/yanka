@@ -46,9 +46,7 @@ class RetrievalSynthesisResult:
     missing_file_references: list[str]
 
 
-STALE_INDEX_WARNING = (
-    "Some indexed records are missing on disk; run /rebuild to refresh indexes."
-)
+STALE_INDEX_WARNING = "Some indexed records are missing on disk; run /rebuild to refresh indexes."
 
 
 def load_retrieved_records(

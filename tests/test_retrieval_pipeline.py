@@ -110,21 +110,11 @@ def test_run_retrieval_pipeline_mocked_e2e(tmp_path: Path) -> None:
     assert result.analysis.query_type is QueryType.CURRENT_STATE
     assert query_calls
     assert synthesis_calls
-    assert [hit.file_reference for hit in result.graph_hits] == [
-        "records/with-claims.md"
-    ]
-    assert [hit.file_reference for hit in result.vector_hits] == [
-        "records/with-claims.md"
-    ]
-    assert [hit.file_reference for hit in result.merged_hits] == [
-        "records/with-claims.md"
-    ]
-    assert result.merged_hits[0].sources == frozenset(
-        {RetrievalSource.GRAPH, RetrievalSource.VECTOR}
-    )
-    assert (
-        result.answer == "Sessions are stored in PostgreSQL (source: with-claims.md)."
-    )
+    assert [hit.file_reference for hit in result.graph_hits] == ["records/with-claims.md"]
+    assert [hit.file_reference for hit in result.vector_hits] == ["records/with-claims.md"]
+    assert [hit.file_reference for hit in result.merged_hits] == ["records/with-claims.md"]
+    assert result.merged_hits[0].sources == frozenset({RetrievalSource.GRAPH, RetrievalSource.VECTOR})
+    assert result.answer == "Sessions are stored in PostgreSQL (source: with-claims.md)."
     assert result.answer_view.citations == ["with-claims.md"]
     assert result.answer_view.sources[0].file_reference == "records/with-claims.md"
     assert "RETRIEVED RECORDS:" in synthesis_calls[0][1]["content"]

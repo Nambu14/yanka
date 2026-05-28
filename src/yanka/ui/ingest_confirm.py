@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -11,11 +12,22 @@ from rich.panel import Panel
 from rich.text import Text
 
 from yanka.records.models import Claim, ClaimStatus, Record
+from yanka.ui.console_file import ConsoleFile
 
 if TYPE_CHECKING:
+    from yanka.ingest.duplicate_claims import DuplicateClaimMatch
     from yanka.ingest.write import WriteResult
 
 _REBUILD_HINT = "Indexing incomplete — run `yanka rebuild` to fix."
+
+
+@dataclass
+class SkippedClaim:
+    """A claim that was dropped before write because it restated an existing one."""
+
+    content: str
+    existing_claim_id: str
+    existing_file: str
 
 
 @dataclass
@@ -29,6 +41,7 @@ class IngestConfirmationView:
     tags: list[str] = field(default_factory=list)
     superseded_files: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    skipped_claims: list[SkippedClaim] = field(default_factory=list)
 
 
 def confirmation_view_from_record(
@@ -37,11 +50,13 @@ def confirmation_view_from_record(
     path: Path | None = None,
     write_result: WriteResult | None = None,
     extra_warnings: list[str] | None = None,
+    duplicate_claims: list[DuplicateClaimMatch] | None = None,
 ) -> IngestConfirmationView:
     """Build a confirmation view from a written record and optional write outcome."""
     filename = path.name if path is not None else _filename_from_record(record)
     warnings = list(extra_warnings or [])
     warnings.extend(_warnings_from_write_result(write_result))
+    skipped = _skipped_from_duplicates(duplicate_claims or [])
     return IngestConfirmationView(
         filename=filename,
         context_path=list(record.context_path),
@@ -50,6 +65,7 @@ def confirmation_view_from_record(
         tags=list(record.tags),
         superseded_files=_superseded_files(record),
         warnings=warnings,
+        skipped_claims=skipped,
     )
 
 
@@ -57,9 +73,15 @@ def render_ingest_confirmation(
     view: IngestConfirmationView,
     *,
     console: Console | None = None,
+    output_fn: Callable[[str], None] | None = None,
 ) -> None:
     """Print the green-bordered record confirmation panel."""
-    target = console if console is not None else Console()
+    if console is not None:
+        target = console
+    elif output_fn is not None:
+        target = Console(file=ConsoleFile(output_fn), force_terminal=True, width=120)
+    else:
+        target = Console()
     target.print(_build_panel(view))
 
 
@@ -85,6 +107,7 @@ def _panel_body(view: IngestConfirmationView) -> RenderableType:
     lines.append(_labeled_line("Context", _format_context_path(view.context_path)))
     lines.append(_labeled_line("Decision", view.decision))
     lines.extend(_claims_section(view.claims))
+    lines.extend(_skipped_section(view.skipped_claims))
     if view.superseded_files:
         lines.append(_labeled_line("Supersedes", ", ".join(view.superseded_files)))
     if view.tags:
@@ -119,6 +142,35 @@ def _claim_line(claim: Claim) -> Text:
     if claim.status == ClaimStatus.TENTATIVE:
         line.append(" (tentative)", style="bold yellow")
     return line
+
+
+def _skipped_section(skipped: list[SkippedClaim]) -> list[RenderableType]:
+    if not skipped:
+        return []
+    header = Text()
+    header.append("Skipped (duplicates):", style="bold yellow")
+    rows: list[RenderableType] = [header]
+    for entry in skipped:
+        row = Text("  • ", style="yellow")
+        row.append(f'"{entry.content}"')
+        target = entry.existing_claim_id or entry.existing_file
+        if target:
+            row.append(f" — already in {target}", style="dim")
+        rows.append(row)
+    return rows
+
+
+def _skipped_from_duplicates(
+    matches: list[DuplicateClaimMatch],
+) -> list[SkippedClaim]:
+    return [
+        SkippedClaim(
+            content=match.new_content,
+            existing_claim_id=match.existing_claim_id,
+            existing_file=match.existing_file,
+        )
+        for match in matches
+    ]
 
 
 def _warnings_section(warnings: list[str]) -> list[RenderableType]:

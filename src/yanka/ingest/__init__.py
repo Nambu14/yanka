@@ -37,6 +37,11 @@ from yanka.ingest.context_search import (
     format_related_records_for_prompt,
     search_related_records,
 )
+from yanka.ingest.duplicate_claims import (
+    DuplicateClaimMatch,
+    drop_duplicate_claims,
+    find_duplicate_claims,
+)
 from yanka.ingest.entity_resolution import (
     EntityResolutionError,
     build_entity_resolution_messages,
@@ -54,7 +59,12 @@ from yanka.ingest.extraction import (
     run_record_extraction_loop,
     run_record_extraction_loop_detailed,
 )
-from yanka.ingest.pipeline import IngestAbortError, IngestResult, run_ingest_pipeline
+from yanka.ingest.pipeline import (
+    IngestAbortError,
+    IngestDuplicateRecordError,
+    IngestResult,
+    run_ingest_pipeline,
+)
 from yanka.ingest.pipeline_stages import PipelineStage
 from yanka.ingest.write import WriteResult, write_ingested_record
 
@@ -67,9 +77,11 @@ __all__ = [
     "ConflictPromptView",
     "ContextRecord",
     "DetectedConflict",
+    "DuplicateClaimMatch",
     "EntityResolutionError",
     "FINAL_CLARIFYING_ROUND_NUDGE",
     "IngestAbortError",
+    "IngestDuplicateRecordError",
     "IngestResult",
     "PipelineStage",
     "RecordExtractionError",
@@ -86,7 +98,9 @@ __all__ = [
     "extract_claims",
     "extract_claims_validated",
     "confirm_detected_conflicts",
+    "drop_duplicate_claims",
     "evaluate_conflicts",
+    "find_duplicate_claims",
     "parse_existing_claim_id",
     "find_conflict_candidates",
     "find_related_records_for_ingest",
