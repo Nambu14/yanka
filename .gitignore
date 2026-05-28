@@ -219,3 +219,6 @@ __marimo__/
 
 # Testing data
 test-records/
+
+# Cursor IDE (local rules/commands; not part of the product)
+.cursor/
