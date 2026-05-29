@@ -28,9 +28,9 @@ jobs:
           - os: windows-latest
             label: Windows
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -38,7 +38,7 @@ jobs:
         run: python scripts/build_release.py --version "${{ inputs.version }}"
 
       - name: Upload platform bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: yanka-${{ inputs.version }}-${{ matrix.label }}
           path: release/
@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload sdist and wheel (Linux)
         if: matrix.label == 'Linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: yanka-${{ inputs.version }}-sdist
           path: |
@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           pattern: yanka-${{ inputs.version }}-*
