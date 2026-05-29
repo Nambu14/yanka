@@ -1,10 +1,12 @@
 # yanka
 
-[![PyPI version](https://img.shields.io/pypi/v/yanka.svg)](https://pypi.org/project/yanka/)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://pypi.org/project/yanka/)
-[![CI](https://github.com/Nambu14/yanka/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nambu14/yanka/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/Nambu14/yanka.svg)](https://github.com/Nambu14/yanka/blob/main/LICENSE)
-[![Homebrew tap](https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white)](https://github.com/Nambu14/homebrew-yanka)
+<p align="left">
+  <a href="https://pypi.org/project/yanka/"><img src="https://img.shields.io/pypi/v/yanka.svg" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/yanka/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white" alt="Python 3.12+"></a>
+  <a href="https://github.com/Nambu14/yanka/actions/workflows/ci.yml"><img src="https://github.com/Nambu14/yanka/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/Nambu14/yanka/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Nambu14/yanka.svg" alt="License"></a>
+  <a href="https://github.com/Nambu14/homebrew-yanka"><img src="https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white" alt="Homebrew tap"></a>
+</p>
 
 **Log engineering decisions in conversation. Find them later with plain English.**
 
