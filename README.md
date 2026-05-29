@@ -1,5 +1,11 @@
 # yanka
 
+[![PyPI version](https://img.shields.io/pypi/v/yanka.svg)](https://pypi.org/project/yanka/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white)](https://pypi.org/project/yanka/)
+[![CI](https://github.com/Nambu14/yanka/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nambu14/yanka/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/Nambu14/yanka.svg)](https://github.com/Nambu14/yanka/blob/main/LICENSE)
+[![Homebrew tap](https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white)](https://github.com/Nambu14/homebrew-yanka)
+
 **Log engineering decisions in conversation. Find them later with plain English.**
 
 yanka is a local-first CLI for your own engineering memory. You `/log` what you decided; it becomes structured markdown on disk. You `/ask` a question months later and get answers with citations — no digging through notes, no "why did I choose this again?"
