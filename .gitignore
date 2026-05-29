@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 release/
+src/yanka/_version.py
 downloads/
 eggs/
 .eggs/

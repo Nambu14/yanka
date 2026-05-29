@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import platform
 import shutil
 import subprocess
@@ -12,6 +13,7 @@ import sys
 import tarfile
 import zipfile
 from pathlib import Path
+
 
 def _platform_slug() -> str:
     system = platform.system().lower()
@@ -58,11 +60,13 @@ def main() -> None:
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[1]
-    subprocess.run(
-        [sys.executable, str(Path(__file__).resolve().parent / "set_version.py"), args.version],
-        check=True,
-        cwd=root,
-    )
+
+    # Version is derived from the git tag via hatch-vcs. The tag may not exist yet
+    # when CI builds, so pin the version for this build through setuptools_scm's
+    # pretend-version env var (per-distribution form wins over the generic one).
+    build_env = os.environ.copy()
+    build_env["SETUPTOOLS_SCM_PRETEND_VERSION_FOR_YANKA"] = args.version
+    build_env["SETUPTOOLS_SCM_PRETEND_VERSION"] = args.version
 
     subprocess.run([sys.executable, "-m", "pip", "install", "build"], check=True)
 
@@ -70,7 +74,7 @@ def main() -> None:
     if dist.exists():
         shutil.rmtree(dist)
 
-    subprocess.run([sys.executable, "-m", "build", str(root)], check=True, cwd=root)
+    subprocess.run([sys.executable, "-m", "build", str(root)], check=True, cwd=root, env=build_env)
 
     if not dist.is_dir():
         raise SystemExit("dist/ was not created")
