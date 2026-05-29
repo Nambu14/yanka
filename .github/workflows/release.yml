@@ -4,48 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version (e.g. 0.2.0 — no leading v)
+        description: Release version (e.g. 0.3.0 — no leading v)
         required: true
         type: string
       publish:
-        description: Publish the GitHub Release immediately (creates tag v*). If false, leaves a draft for you to review.
+        description: Publish the GitHub Release immediately. If false, leaves a draft for you to review.
         required: false
         type: boolean
         default: false
 
 jobs:
-  prepare:
-    name: bump version on main
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      release_sha: ${{ steps.sha.outputs.sha }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set version in pyproject.toml
-        run: python scripts/set_version.py "${{ inputs.version }}"
-
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet pyproject.toml; then
-            echo "pyproject.toml already at ${{ inputs.version }}"
-          else
-            git add pyproject.toml
-            git commit -m "chore(release): bump version to ${{ inputs.version }}"
-            git push
-          fi
-
-      - name: Record release commit
-        id: sha
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
   build:
     name: build (${{ matrix.label }})
-    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -59,8 +29,6 @@ jobs:
             label: Windows
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.prepare.outputs.release_sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -87,7 +55,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: [prepare, build]
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -113,10 +81,13 @@ jobs:
           ls -la upload/
 
       - name: Create GitHub Release
+        # Creates and pushes tag v<version> at the current main commit, then
+        # attaches the assets. Tags are not blocked by branch protection, so this
+        # needs no commit to main and no bypass.
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
-          target_commitish: ${{ needs.prepare.outputs.release_sha }}
+          target_commitish: ${{ github.sha }}
           name: yanka v${{ inputs.version }}
           draft: ${{ !inputs.publish }}
           generate_release_notes: true

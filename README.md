@@ -87,21 +87,22 @@ The [CI workflow](.github/workflows/ci.yml) runs on every pull request and on pu
 
 ### Release flow (today)
 
-Merge feature PRs to `main` as usual — **no separate version-bump PR**. Version lives only in [`pyproject.toml`](pyproject.toml); `yanka --version` reads it from there (or from installed package metadata).
+The **git tag is the version** — there is no version string to edit. `pyproject.toml` declares the version as `dynamic` and [`hatch-vcs`](https://github.com/ofek/hatch-vcs) derives it from the latest `v*` tag. `yanka --version` reads it from installed package metadata.
 
-**Actions → Release → Run workflow** — enter the version, run.
+Merge feature PRs to `main` as usual. When you want to ship:
+
+**Actions → Release → Run workflow** — enter the version, run. **No version-bump commit, no PR, no `main` push.**
 
 | Input | Meaning |
 |-------|---------|
-| **version** | e.g. `0.2.0` (no `v` prefix) |
-| **publish** | `false` (default): draft release for review. `true`: publish immediately and create tag `v0.2.0`. |
+| **version** | e.g. `0.3.0` (no `v` prefix) |
+| **publish** | `false` (default): draft release for review. `true`: publish immediately. |
 
 The workflow then:
 
-1. Commits `chore(release): bump version to …` on `main` (only `pyproject.toml`).
-2. Builds on **macOS**, **Linux**, and **Windows** from that commit.
-3. Creates a **GitHub Release** with **`yanka-<version>.tar.gz`** (sdist, for Homebrew) plus platform bundles (tag points at the bump commit).
-4. Keeps copies on the workflow run under **Artifacts**.
+1. Builds on **macOS**, **Linux**, and **Windows** (version pinned for the build via `SETUPTOOLS_SCM_PRETEND_VERSION`, so the tag isn't required yet).
+2. Creates a **GitHub Release** that also **creates and pushes tag `v<version>`** at the current `main` commit. Tags are not subject to branch protection, so no bypass is needed.
+3. Attaches **`yanka-<version>.tar.gz`** (sdist, for Homebrew), the wheel, and platform bundles. Copies stay on the run under **Artifacts**.
 
 Each bundle (`yanka-<version>-<os>-<arch>.tar.gz`, or `.zip` on Windows) contains:
 
@@ -112,15 +113,15 @@ Each bundle (`yanka-<version>-<os>-<arch>.tar.gz`, or `.zip` on Windows) contain
 | `SHA256SUMS.txt` | Checksums for files in the bundle |
 | `MANIFEST.txt` | Version, platform, and Python used for the build |
 
-After a draft release, open **Releases** on GitHub and click **Publish** when ready.
+After a draft release, open **Releases** on GitHub and click **Publish** when ready (publishing makes the tag live).
 
-**Repo settings:** the workflow must be allowed to push to `main` (Settings → Actions → General → Workflow permissions, and branch protection must allow `github-actions[bot]` if enabled).
+**Repo settings:** Settings → Actions → General → Workflow permissions must be **Read and write** (so the `release` job can create the tag/release). No branch-protection bypass is required.
 
 Local build (same packages as CI):
 
 ```bash
 pip install build
-python scripts/build_release.py --version 0.2.0
+python scripts/build_release.py --version 0.3.0
 ls release/
 ```
 

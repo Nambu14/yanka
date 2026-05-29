@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling>=1.0,<2"]
+requires = ["hatchling>=1.0,<2", "hatch-vcs>=0.4,<1"]
 build-backend = "hatchling.build"
 
 [project]
 name = "yanka"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Yet ANother Knowledge App — capture engineering decisions from conversation and retrieve them later."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -53,6 +53,14 @@ spike = [
     "numpy>=1.26,<3",
     "pyarrow>=15,<22",
 ]
+
+[tool.hatch.version]
+# Version comes from the git tag (e.g. v0.3.0). CI release builds pass
+# SETUPTOOLS_SCM_PRETEND_VERSION_FOR_YANKA so the tag isn't required at build time.
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/yanka/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/yanka"]
