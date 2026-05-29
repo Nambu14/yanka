@@ -3,6 +3,7 @@ from pathlib import Path
 import click
 from click.testing import CliRunner
 
+import yanka
 from yanka.cli import CONTEXT_KEY, get_data_paths, main
 from yanka.paths import ensure_data_layout, resolve_data_paths
 from yanka.records.io import read_record, write_record
@@ -11,7 +12,7 @@ from yanka.records.io import read_record, write_record
 def test_version() -> None:
     result = CliRunner().invoke(main, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert yanka.__version__ in result.output
 
 
 def test_help() -> None:
@@ -25,7 +26,7 @@ def test_help() -> None:
 def test_data_dir_option_with_version(tmp_path: Path) -> None:
     result = CliRunner().invoke(main, ["--data-dir", str(tmp_path), "--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.output
+    assert yanka.__version__ in result.output
 
 
 def test_rebuild_command(tmp_path: Path) -> None:
