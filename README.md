@@ -96,13 +96,14 @@ Merge feature PRs to `main` as usual. When you want to ship:
 | Input | Meaning |
 |-------|---------|
 | **version** | e.g. `0.3.0` (no `v` prefix) |
-| **publish** | `false` (default): draft release for review. `true`: publish immediately. |
+| **publish** | `false` (default): draft GitHub Release only (no PyPI). `true`: publish GitHub Release and upload to PyPI. |
 
 The workflow then:
 
 1. Builds on **macOS**, **Linux**, and **Windows** (version pinned for the build via `SETUPTOOLS_SCM_PRETEND_VERSION`, so the tag isn't required yet).
 2. Creates a **GitHub Release** that also **creates and pushes tag `v<version>`** at the current `main` commit. Tags are not subject to branch protection, so no bypass is needed.
 3. Attaches **`yanka-<version>.tar.gz`** (sdist, for Homebrew), the wheel, and platform bundles. Copies stay on the run under **Artifacts**.
+4. If **publish** is `true`, uploads the sdist and wheel to **[PyPI](https://pypi.org/project/yanka/)** via trusted publishing (no API token in the repo).
 
 Each bundle (`yanka-<version>-<os>-<arch>.tar.gz`, or `.zip` on Windows) contains:
 
@@ -116,6 +117,21 @@ Each bundle (`yanka-<version>-<os>-<arch>.tar.gz`, or `.zip` on Windows) contain
 After a draft release, open **Releases** on GitHub and click **Publish** when ready (publishing makes the tag live).
 
 **Repo settings:** Settings → Actions → General → Workflow permissions must be **Read and write** (so the `release` job can create the tag/release). No branch-protection bypass is required.
+
+### PyPI (one-time setup)
+
+PyPI publishing runs only when **publish** is `true`. It uses [trusted publishing](https://docs.pypi.org/trusted-publishers/) (OIDC) — no `PYPI_API_TOKEN` secret.
+
+1. Create/login at [pypi.org](https://pypi.org) and register the project name **`yanka`** (first release only).
+2. On the PyPI project → **Publishing** → **Add a new publisher**:
+   - **PyPI:** `pypi` (not TestPyPI unless you want a test environment)
+   - **Owner:** `Nambu14`
+   - **Repository:** `yanka`
+   - **Workflow name:** `release.yml`
+   - **Environment name:** `pypi`
+3. On GitHub **yanka** repo → **Settings → Environments → New environment** → name it **`pypi`** (no secrets needed).
+
+After that, `pip install yanka` works for anyone once you release with **publish: true**.
 
 Local build (same packages as CI):
 
