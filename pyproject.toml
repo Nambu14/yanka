@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Yet ANother Knowledge App — capture engineering decisions from conversation and retrieve them later."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = "Apache-2.0"
 authors = [{ name = "Lucas" }]
 classifiers = [
     "Development Status :: 4 - Beta",
