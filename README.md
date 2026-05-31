@@ -49,7 +49,7 @@ Python 3.12+. First run: pick a data directory and LLM provider, then you're in 
 
 ## Why Yanka exists
 
-Engineering decisions are most times fast to make but surprisingly hard to remember.
+Engineers often make numerous quick decisions, instantly forgetting the reasoning behind them.
 
 The result is familiar: a few weeks later, you remember **what** changed, but not **why** it changed, what alternatives were considered, or which tradeoffs mattered at the time.
 
