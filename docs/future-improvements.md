@@ -6,7 +6,7 @@ Ideas and proposals that are intentionally out of current implementation scope b
 
 ### Problem
 
-The graph currently stores people by a single canonical `Person.name`. If the same individual appears under different forms (for example, `Rudy` vs `Rudolf Kraft`), Yanka can create separate `Person` nodes and split decision history across identities.
+The graph currently stores people by a single canonical `Person.name`. If the same individual appears under different forms (for example, `Rudy` vs `Rodolfo Suarez`), Yanka can create separate `Person` nodes and split decision history across identities.
 
 ### Why this matters
 
