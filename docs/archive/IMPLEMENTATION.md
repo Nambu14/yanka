@@ -1,7 +1,7 @@
 # Yanka — Implementation Plan (archived)
 
 Historical step-by-step build plan for v1. **Implementation is complete** (Phases
-0–9 and **R.0**). For current behavior, use [`yanka-spec.md`](../../yanka-spec.md)
+0–9 and **R.0**). For current behavior, use [`yanka-spec.md`](../yanka-spec.md)
 and [`docs/architecture.md`](../architecture.md).
 
 Each step was one PR-sized (or smaller) unit: implement → verify → move on.

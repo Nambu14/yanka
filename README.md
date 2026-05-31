@@ -5,6 +5,7 @@
   <a href="https://pypi.org/project/yanka/"><img src="https://img.shields.io/badge/python-3.12+-blue.svg?logo=python&logoColor=white" alt="Python 3.12+"></a>
   <a href="https://github.com/Nambu14/yanka/actions/workflows/ci.yml"><img src="https://github.com/Nambu14/yanka/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/Nambu14/yanka/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Nambu14/yanka.svg" alt="License"></a>
+  <a href="https://github.com/Nambu14/homebrew-yanka"><img src="https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white" alt="Homebrew tap"></a>
 </p>
 
 **Capture technical decisions fast. Retrieve the why later.**
@@ -107,7 +108,7 @@ pytest -q
 
 Useful docs:
 
-- Product spec: [`yanka-spec.md`](yanka-spec.md)
+- Product spec: [`docs/yanka-spec.md`](docs/yanka-spec.md)
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - Operations: [`docs/operations.md`](docs/operations.md)
 - Future ideas: [`docs/future-improvements.md`](docs/future-improvements.md)
