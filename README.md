@@ -14,12 +14,14 @@ Yanka is a local-first CLI for individual engineering memory. You use `/log` to 
 Later, you use `/ask` in plain English and get a direct answer with source citations from your own records. No note archaeology, no vendor lock-in, no mystery about why a decision was made.
 
 ## Demo
-
-![Log a decision with /log](docs/demos/log-flow.gif)
 *Log a brain dump, answer a few clarifying questions, get a structured record.*
 
-![Ask later with /ask](docs/demos/ask-flow.gif)
+![Log a decision with /log](docs/demos/log-flow.gif)
+
+
 *Ask in plain English and get a cited answer from your own records.*
+
+![Ask later with /ask](docs/demos/ask-flow.gif)
 
 ## Quick Install (Fastest Path)
 
