@@ -8,87 +8,62 @@
   <a href="https://github.com/Nambu14/homebrew-yanka"><img src="https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white" alt="Homebrew tap"></a>
 </p>
 
-**Capture technical decisions fast. Retrieve the why later.**
+**Remember why you made engineering decisions.**
 
-Yanka is a local-first CLI for individual engineering memory. You use `/log` to turn a messy decision note into a structured markdown record on disk, with context and claims that stay readable by humans.
+Yanka is a local-first CLI for your own engineering memory. `/log` while the context is fresh; `/ask` months later and get the why back with citations. Records are markdown on disk — portable, inspectable, rebuildable.
 
-Later, you use `/ask` in plain English and get a direct answer with source citations from your own records. No note archaeology, no vendor lock-in, no mystery about why a decision was made.
-
-## Demo
-*Log a brain dump, answer a few clarifying questions, get a structured record.*
-
-![Log a decision with /log](docs/demos/log-flow.gif)
-
-
-*Ask in plain English and get a cited answer from your own records.*
-
-![Ask later with /ask](docs/demos/ask-flow.gif)
-
-## Quick Install (Fastest Path)
+## Try it
 
 ```bash
 pip install yanka
 yanka
 ```
 
-Python 3.12+ required. On first run, Yanka asks for a data directory and LLM provider, then drops you into the REPL.
-
-## Try It Now
-
-Run this exact sequence:
+Python 3.12+. First run: pick a data directory and LLM provider, then you're in the REPL. Paste this:
 
 ```text
 /log We moved auth session storage from Redis to Postgres so ops is simpler and debugging is SQL-first.
 /ask Why did we move auth session storage to Postgres?
 ```
 
-Useful commands you will use immediately:
+## Demo
 
-- `/log [text]` — capture a decision (inline or prompted)
-- `/ask [question]` — query your knowledge base with citations
-- `/rebuild` — rebuild graph/vector indexes from markdown records
-- `/resume` — continue interrupted `/log` work
-- `/help` — command reference
+**/log** — brain dump, a few clarifying questions, structured record
 
-## The Two Main Flows
+![Log a decision with /log](docs/demos/log-flow.gif)
 
-### 1) Log a decision, note, or claim
+**/ask** — plain English, cited answer from your records
 
-Use `/log` with inline text or start `/log` and paste when prompted.
+![Ask later with /ask](docs/demos/ask-flow.gif)
 
-```text
-/log We standardized on feature flags per service to reduce release risk.
-```
+## Commands
 
-Yanka runs its ingest pipeline, asks clarifying questions when needed, and writes a record under `~/.yanka/records/`.
+| Command | What it does |
+|---------|--------------|
+| `/log [text]` | Capture a decision (inline or prompted) |
+| `/ask [question]` | Query your knowledge base with citations |
+| `/rebuild` | Rebuild graph/vector indexes from markdown |
+| `/resume` | Continue an interrupted `/log` |
+| `/help` | Full command reference |
 
-### 2) Ask later and retrieve the reasoning
 
-Use `/ask` with a natural-language question.
+## Why Yanka exists
 
-```text
-/ask Why did we standardize on feature flags per service?
-```
+Engineering decisions are most times fast to make but surprisingly hard to remember.
 
-Yanka searches your local knowledge base and returns an answer with citations to the relevant record files.
+The result is familiar: a few weeks later, you remember **what** changed, but not **why** it changed, what alternatives were considered, or which tradeoffs mattered at the time.
 
-## Why Yanka Exists
+Yanka is built for that gap.
 
-- Engineering context decays fast; decisions get buried in chat, docs, and memory.
-- Engineers need a lightweight way to capture rationale at decision time, not in a template-heavy process later.
-- You should be able to dump messy thoughts quickly and let Yanka turn them into structured records with minimal back-and-forth.
-- When you ask later, answers should come back with high certainty and source citations, not guesses.
-- Markdown files are the source of truth, so your data is portable and inspectable.
-- Graph and vector indexes are rebuildable with `yanka rebuild`, so recovery is straightforward.
+It keeps decision capture lightweight:
 
-## What Makes It Different
+- **`/log` while the context is fresh** — capture the reasoning before it disappears
+- **`/ask` later** — retrieve the why with citations from your own records
 
-- Conversational capture (`/log`) instead of forms
-- Plain-English retrieval (`/ask`) with citations
-- Local-first by default
-- File-backed and rebuildable, not a black box
+Everything is stored as markdown on disk: local-first, portable, and rebuildable.
 
-## Optional Install Notes
+No heavy docs. No lost context. Just a better way to keep track of engineering decisions.
+
 
 ### Homebrew (macOS)
 
@@ -106,14 +81,12 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-Useful docs:
+Docs: [`docs/yanka-spec.md`](docs/yanka-spec.md) · [`docs/architecture.md`](docs/architecture.md) · [`docs/operations.md`](docs/operations.md) · [`docs/future-improvements.md`](docs/future-improvements.md)
 
-- Product spec: [`docs/yanka-spec.md`](docs/yanka-spec.md)
-- Architecture: [`docs/architecture.md`](docs/architecture.md)
-- Operations: [`docs/operations.md`](docs/operations.md)
-- Future ideas: [`docs/future-improvements.md`](docs/future-improvements.md)
+## Get started
 
-## Next Step
+1. `pip install yanka && yanka`
+2. `/log` one real decision from this week
+3. `/ask` and confirm you get the why back in seconds
 
-Install Yanka, run `yanka`, and log one real decision from this week.  
-Then run `/ask` and confirm you can recover the context in seconds.
+Useful? [Star the repo](https://github.com/Nambu14/yanka) · [Open an issue](https://github.com/Nambu14/yanka/issues) for bugs and ideas.
