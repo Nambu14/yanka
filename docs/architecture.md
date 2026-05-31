@@ -3,7 +3,7 @@
 This document explains how yanka is put together: the problem shape, the storage
 model, the role of the LLM, and the runtime flows that tie them together. It is
 grounded in what is actually implemented in v1 and cross-references the spec
-([`yanka-spec.md`](../yanka-spec.md)) where useful.
+([`yanka-spec.md`](yanka-spec.md)) where useful.
 
 If you want the user-facing tour, read [`../README.md`](../README.md) first.
 

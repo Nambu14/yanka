@@ -8,23 +8,87 @@
   <a href="https://github.com/Nambu14/homebrew-yanka"><img src="https://img.shields.io/badge/Homebrew-Nambu14%2Fyanka-FCA326.svg?logo=homebrew&logoColor=white" alt="Homebrew tap"></a>
 </p>
 
-**Log engineering decisions in conversation. Find them later with plain English.**
+**Capture technical decisions fast. Retrieve the why later.**
 
-yanka is a local-first CLI for your own engineering memory. You `/log` what you decided; it becomes structured markdown on disk. You `/ask` a question months later and get answers with citations — no digging through notes, no "why did I choose this again?"
+Yanka is a local-first CLI for individual engineering memory. You use `/log` to turn a messy decision note into a structured markdown record on disk, with context and claims that stay readable by humans.
 
-Your data stays on your machine. Markdown is the source of truth; search indexes rebuild from files anytime.
+Later, you use `/ask` in plain English and get a direct answer with source citations from your own records. No note archaeology, no vendor lock-in, no mystery about why a decision was made.
 
----
+## Demo
+*Log a brain dump, answer a few clarifying questions, get a structured record.*
 
-## Install
+![Log a decision with /log](docs/demos/log-flow.gif)
 
-**Requirements:** Python 3.12 or newer.
 
-### pip (macOS, Linux, Windows)
+*Ask in plain English and get a cited answer from your own records.*
+
+![Ask later with /ask](docs/demos/ask-flow.gif)
+
+## Quick Install (Fastest Path)
 
 ```bash
 pip install yanka
+yanka
 ```
+
+Python 3.12+ required. On first run, Yanka asks for a data directory and LLM provider, then drops you into the REPL.
+
+## Try It Now
+
+Run this exact sequence:
+
+```text
+/log We moved auth session storage from Redis to Postgres so ops is simpler and debugging is SQL-first.
+/ask Why did we move auth session storage to Postgres?
+```
+
+Useful commands you will use immediately:
+
+- `/log [text]` — capture a decision (inline or prompted)
+- `/ask [question]` — query your knowledge base with citations
+- `/rebuild` — rebuild graph/vector indexes from markdown records
+- `/resume` — continue interrupted `/log` work
+- `/help` — command reference
+
+## The Two Main Flows
+
+### 1) Log a decision, note, or claim
+
+Use `/log` with inline text or start `/log` and paste when prompted.
+
+```text
+/log We standardized on feature flags per service to reduce release risk.
+```
+
+Yanka runs its ingest pipeline, asks clarifying questions when needed, and writes a record under `~/.yanka/records/`.
+
+### 2) Ask later and retrieve the reasoning
+
+Use `/ask` with a natural-language question.
+
+```text
+/ask Why did we standardize on feature flags per service?
+```
+
+Yanka searches your local knowledge base and returns an answer with citations to the relevant record files.
+
+## Why Yanka Exists
+
+- Engineering context decays fast; decisions get buried in chat, docs, and memory.
+- Engineers need a lightweight way to capture rationale at decision time, not in a template-heavy process later.
+- You should be able to dump messy thoughts quickly and let Yanka turn them into structured records with minimal back-and-forth.
+- When you ask later, answers should come back with high certainty and source citations, not guesses.
+- Markdown files are the source of truth, so your data is portable and inspectable.
+- Graph and vector indexes are rebuildable with `yanka rebuild`, so recovery is straightforward.
+
+## What Makes It Different
+
+- Conversational capture (`/log`) instead of forms
+- Plain-English retrieval (`/ask`) with citations
+- Local-first by default
+- File-backed and rebuildable, not a black box
+
+## Optional Install Notes
 
 ### Homebrew (macOS)
 
@@ -33,75 +97,7 @@ brew tap Nambu14/yanka
 brew install yanka
 ```
 
----
-
-## Quick start
-
-```bash
-yanka
-```
-
-On first run, yanka creates `~/.yanka` and walks you through LLM provider setup (Claude, OpenAI, Google, or local Ollama). Then you're in the REPL:
-
-```text
-/log We chose Postgres over Dynamo for the audit trail — I know SQL, need ad-hoc queries
-/ask Why did we pick Postgres for audit?
-```
-
-| Command | What it does |
-|---------|----------------|
-| `/log [text]` | Capture a decision (inline or guided) |
-| `/ask [question]` | Query your knowledge base with citations |
-| `/rebuild` | Re-index from markdown if something looks stale |
-| `/help` | Full command list |
-
----
-
-## What yanka does
-
-- **Capture** — free-form `/log` notes become structured decision records (markdown + metadata).
-- **Index** — local graph + vector store for semantic and relational retrieval.
-- **Retrieve** — `/ask` answers with links to the records that support them.
-- **Recover** — indexes are disposable; `/rebuild` reconstructs everything from files alone.
-
-Everything lives under `~/.yanka/`:
-
-```
-~/.yanka/
-├── records/          # Markdown records (source of truth)
-├── graph/            # LadybugDB index (rebuildable)
-├── vectors/          # LanceDB index (rebuildable)
-└── config.yaml       # Provider, models, paths
-```
-
----
-
-## First-run defaults
-
-The setup wizard picks a fast/cheap default model per provider (similar tier to `gpt-4o-mini`):
-
-| Provider | Default model |
-|----------|----------------|
-| Claude | `claude-3-5-haiku-latest` |
-| OpenAI | `gpt-4o-mini` |
-| Google | `gemini-2.0-flash-lite` |
-| Ollama | `llama3.2:3b` |
-
-Change models in `config.yaml` or inspect effective values with `/config`.
-
----
-
-## Common recovery flows
-
-- **Stale index warning in `/ask`** — run `/rebuild`, then retry.
-- **Interrupted `/log`** — run `/resume`.
-- **Something broke** — check `~/.yanka/runtime/yanka.log`.
-
----
-
-## Developing
-
-Clone the repo and install with dev dependencies:
+## Contributing
 
 ```bash
 git clone https://github.com/Nambu14/yanka.git
@@ -110,53 +106,14 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) and [`yanka-spec.md`](yanka-spec.md) for the full product and data model.
+Useful docs:
 
----
-
-## Releases (maintainers)
-
-Nothing runs on push or tag by itself. You cut a release when you choose.
-
-### CI on pull requests and `main`
-
-The [CI workflow](.github/workflows/ci.yml) runs on every pull request and on pushes to `main` (lint + full test suite). Merge only after CI is green.
-
-### Release flow
-
-The **git tag is the version** — there is no version string to edit in source. [`hatch-vcs`](https://github.com/ofek/hatch-vcs) derives it from the latest `v*` tag.
-
-**Actions → Release → Run workflow** — enter the version, run. No version-bump commit or PR.
-
-| Input | Meaning |
-|-------|---------|
-| **version** | e.g. `0.3.0` (no `v` prefix) |
-| **publish** | `false`: draft GitHub Release only. `true`: publish release + upload to PyPI. |
-
-The workflow builds on macOS, Linux, and Windows, creates tag `v<version>`, attaches release assets (including `yanka-<version>.tar.gz` for Homebrew), and optionally publishes to [PyPI](https://pypi.org/project/yanka/).
-
-After a draft release, open **Releases** on GitHub and click **Publish** when ready.
-
-Update the [homebrew-yanka](https://github.com/Nambu14/homebrew-yanka) tap via **Actions → Update formula** (opens a PR with url + sha256 from the release).
-
-Local build:
-
-```bash
-pip install build
-python scripts/build_release.py --version 0.3.0
-ls release/
-```
-
----
-
-## License
-
-Apache License 2.0 — see [`LICENSE`](LICENSE).
-
-## Documentation
-
-- Product spec: [`yanka-spec.md`](yanka-spec.md)
+- Product spec: [`docs/yanka-spec.md`](docs/yanka-spec.md)
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
-- Operations runbook: [`docs/operations.md`](docs/operations.md)
+- Operations: [`docs/operations.md`](docs/operations.md)
 - Future ideas: [`docs/future-improvements.md`](docs/future-improvements.md)
-- Archived v1 build plan: [`docs/archive/IMPLEMENTATION.md`](docs/archive/IMPLEMENTATION.md)
+
+## Next Step
+
+Install Yanka, run `yanka`, and log one real decision from this week.  
+Then run `/ask` and confirm you can recover the context in seconds.
